@@ -1,0 +1,565 @@
+/* 1. Global Styles: General styles for the whole document */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #ffffff;
+    transition: margin-left 0.3s ease;
+}
+
+/* 2. Layout Styles: Define structure and positioning */
+
+#chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow: hidden;
+    align-items: center;
+    background-color: #ffffff;
+}
+
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#outer-container {
+    max-width: 750px;
+    margin-left: max(10px, calc(50% - 375px));
+    margin-right: max(10px, calc(50% - 375px));
+    margin-bottom: 20px;
+    position: relative;
+    border-radius: 25px;
+    background-color: #f4f4f4;
+    display: flex;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+#input-wrapper {
+    width: 100%;
+    margin-left: 45px;
+    margin-right: 100px;
+    flex-direction: column;
+}
+
+#button-wrapper {
+    display: flex;
+    gap: 10px;
+    margin-right: 10px;
+    position: absolute;
+    bottom: 8px;
+    right: 0;
+}
+
+/* 3. Component Styles: Styles for specific components */
+
+#top-bar {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    position: relative;
+    z-index: 1;
+    transition: margin-left 0.3s ease;
+    height: 70px;
+}
+
+#top-bar.shifted {
+    margin-left: 50px;
+}
+
+#top-bar img {
+    height: 70px;
+    margin-right: 20px;
+}
+
+/* Sidebar styles */
+#sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    padding: 50px 10px;
+    height: 100%;
+    width: 250px;
+    background-color: #f4f4f4;
+    color: #1F1F1F;
+    transform: translateX(-250px);
+    transition: transform 0.3s ease;
+    z-index: 2;
+    box-sizing: border-box;
+}
+
+#sidebar.visible {
+    transform: translateX(0);
+}
+
+#sidebar-toggle {
+    position: fixed;
+    top: 17px;
+    left: 20px;
+    background-color: #ffffff;
+    color: #7D7D7D;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 3;
+    transition: background-color 0.3s ease;
+}
+
+#sidebar-toggle:hover {
+    background-color: #f4f4f4;
+}
+
+#sidebar-toggle.active {
+    background-color: #f4f4f4;
+}
+
+#sidebar-toggle.active:hover {
+    background-color: #d8d8d8;
+}
+
+/* Model switcher and dropdown styles */
+#model-switcher-container {
+    position: relative;
+}
+
+#model-switcher {
+    background-color: #ffffff;
+    border: none;
+    color: #7D7D7D;
+    padding: 10px 15px;
+    font-size: 18px;
+    font-weight: 550;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+#model-switcher i {
+    margin-left: 8px;
+    font-size: 14px;
+    color: #a9a9a9;
+}
+
+#model-switcher:hover {
+    background-color: #f4f4f4;
+}
+
+#dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #ffffff;
+    border: 1px solid #e6e4e4;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(144, 144, 144, 0.2);
+    z-index: 10;
+    width: 300px;
+}
+
+.dropdown-item {
+    padding: 5px;
+    border-bottom: 1px solid #f4f4f4;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+#dropdown-menu button {
+    background-color: #ffffff;
+    color: #333333;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border: none;
+    transition: background-color 0.2s ease;
+}
+
+#dropdown-menu button:hover {
+    background-color: #f4f4f4;
+}
+
+#dropdown-menu button.selected::after {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900; 
+    color: #ffffff;
+    font-size: 8px;
+}
+
+#dropdown-menu .model-icon {
+    width: 30px; 
+    height: 30px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    border-radius: 25px;
+    background-color: #f4f4f4;
+}
+
+.model-icon img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    padding-left: 20px;
+}
+
+.model-details {
+    display: flex;
+    flex-direction: column;
+    font-size: 16px;
+    font-weight: 300;
+}
+
+.model-description {
+    font-size: 12px;
+    color: #a8a8a8;
+}
+
+/* Placeholder and SVG styles */
+#placeholder-message {
+    font-size: 40px;
+    font-weight: 600;
+    color: #7D7D7D;
+    margin-left: max(10px, calc(50% - 375px));
+    align-self:  flex-start;
+    margin-top: 50px;
+    max-width: 500px;
+}
+
+#placeholder-message .greeting {
+    font-size: 60px;
+    font-weight: 700;
+    color: #7D7D7D;
+    display: block;
+    margin-bottom: 10px;
+}
+
+#svg-container {
+    align-self: flex-start;
+    margin-left: max(10px, calc(50% - 375px));
+    margin-top: 20px;
+}
+
+#svg-container img {
+    width: 100px;
+    height: auto;
+}
+
+/* Message styles */
+.message {
+    padding: 0 15px;
+    border-radius: 20px;
+    word-wrap: break-word;
+    font-size: 15px;
+    position: relative;
+}
+
+.message.user {
+    /* background-color: #D82F20; */
+    /* color: #fff; */
+    background-color: #F4F4F4;
+    color: #0D0D0D;
+    align-self: flex-end;
+    text-align: left;
+    border-bottom-right-radius: 0;
+    margin-left: max(10px, calc(50% - 200px));
+    margin-right: max(10px, calc(50% - 375px));
+    line-height: 1.5;
+}
+
+.message.user.image-message {
+    background-color: transparent;
+    padding: 0;
+}
+
+.message.bot {
+    background-color: #ffffff;
+    color: #1F1F1F;
+    align-self: flex-start;
+    border-bottom-left-radius: 0;
+    margin-left: max(10px, calc(50% - 375px));
+    margin-right: max(10px, calc(50% - 375px));
+    padding-left: 50px;
+    line-height: 2;
+}
+
+.message.bot .model-icon {
+    position: absolute;
+    top: 10px;
+    left: 0px;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #e6e4e4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0px;
+}
+
+.message.bot .model-icon img {
+    max-width: 50%;
+    max-height: 50%;
+    background-size: contain;
+    padding: 0px;
+}
+
+/* Input and image container styles */
+#user-input {
+    padding: 10px;
+    width: 100%;
+    background-color: #f4f4f4;
+    border: none;
+    font-size: 15px;
+    max-height: 180px;
+    outline: none;
+    box-sizing: border-box;
+    overflow-y: auto;
+    resize: none;
+    line-height: 1.5;
+    display: flex;
+}
+
+#image-preview {
+    display: none;
+    margin-left: 10px;
+}
+
+#image-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+#image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
+}
+
+.icon-button.delete-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#image-container:hover .delete-icon {
+    display: flex;
+}
+
+.icon-button.delete-icon i {
+    font-size: 12px;
+    color: #fff;
+    align-items: center;
+}
+
+.icon-button.delete-icon:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Button styles */
+.icon-button {
+    background-color: #a8a8a8;
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    font-size: 18px;
+    color: #f4f4f4;
+    border: none;
+}
+
+.icon-button.active {
+    background-color: #D82F20;
+}
+
+.icon-button:disabled {
+    background-color: #ccc;
+    cursor: default;
+}
+
+#image-upload-container {
+    position: absolute;
+    left: 10px;
+    display: flex;
+    background-color: none;
+    bottom: 8px;
+}
+
+#image-upload-button {
+    background-color: #f4f3f4;
+    color: #000000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    width: 35px;
+    border-radius: 50%;
+    font-size: 18px;
+    border: none;
+}
+
+#image-upload-button input[type="file"] {
+    display: none;
+}
+
+/* Link styles */
+a {
+    color: #3963A5;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #7C99C4;
+}
+
+/* 4. Utility Classes: Reusable utility classes */
+
+.bot-buttons-container {
+    border-radius: 10px;
+    padding: 5px;
+    display: inline-flex;
+    background-color: #ffffff;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.bot-buttons {
+    display: flex;
+    gap: 10px;
+    opacity: 0.8;
+    justify-content: flex-start;
+}
+
+.bot-buttons button {
+    background-color: #ffffff;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.bot-buttons button i {
+    font-size: 14px;
+    color: #7D7D7D;
+}
+
+.bot-buttons button:hover {
+    background-color: #f4f4f4;
+}
+
+.message.bot:not(:last-child) .bot-buttons-container {
+    opacity: 0;
+    visibility: hidden;
+    border: 1px solid #e6e4e4;
+}
+
+.message.bot:not(:last-child):hover .bot-buttons-container {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 5. Animations and Transitions: Animation keyframes and styles */
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.9);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(0.9);
+        opacity: 1;
+    }
+}
+
+.pulsing {
+    animation: pulse 2s infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-icon {
+    border: 2px solid #ccc;
+    border-top: 2px solid #333;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    animation: spin 1s linear infinite;
+}
+
+.stop-icon {
+    width: 14px;
+    height: 14px;
+    background-color: #333;
+}
