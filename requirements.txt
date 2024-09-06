@@ -1,0 +1,13 @@
+flask
+openai
+google-generativeai
+groq
+sounddevice
+PyAudio
+tqdm
+langchain==0.2.1
+langchain-cli==0.0.23
+langchain-community==0.2.1
+langchain-core==0.2.30
+langchain-text-splitters==0.2.0
+chromadb==0.4.24
