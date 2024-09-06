@@ -1,6 +1,6 @@
 # RAG Chatbot System for Citizen Signals
 
-Retrieval Augmented Generation (RAG) Chatbot System designed for the Municipality of Amsterdam to handle citizen signals (i.e., meldingen). Given a melding, this system aims to retrieve useful information using RAG to already resolve the melding before it is forwarded to the Municipality of Amsterdam Signals system. This way we can improve user experience and avoid meldingen unnecessarily enter the Signals system.
+The Retrieval Augmented Generation (RAG) Chatbot System is designed for the Municipality of Amsterdam to efficiently handle citizen signals (meldingen). When a melding is received, the system retrieves relevant information using RAG, with the aim of resolving the issue before it is forwarded to the Municipality’s official Signals system. This approach improves the overall user experience by reducing the number of meldingen that need to be escalated, ensuring faster and more efficient responses.
 
 
 https://github.com/user-attachments/assets/71d751a4-6eda-4b89-85cf-71f9f11b52b4
@@ -8,7 +8,9 @@ https://github.com/user-attachments/assets/71d751a4-6eda-4b89-85cf-71f9f11b52b4
 
 ## Background
 
-The Amsterdam RAG Chatbot System is a project developed to assist visitors of the amsterdam.nl website in easily accessing information related to the municipality. The scope could be enhanced by utilizing more data sources. By integrating advanced AI technologies, such as Retrieval Augmented Generation (RAG), the system provides accurate and context-aware responses. The chatbot supports multiple input types, including text and images, and offers flexibility in response generation through different LLMs.
+The RAG Chatbot System for Citizen Signals was developed to streamline the process of managing citizen reports (meldingen) for the Municipality of Amsterdam. By using Retrieval Augmented Generation (RAG), the system can pull in relevant information related to a melding and attempt to resolve it before escalating it to the Municipality's official Signals system. This proactive approach helps reduce the workload on the municipal team and enhances the user experience by providing quicker resolutions.
+
+The system is designed to efficiently manage citizen-reported issues, improve response times, and minimize unnecessary entries into the Signals system. By integrating RAG, the chatbot retrieves contextual information and assists citizens directly, minimizing the need for manual handling. This innovative approach enhances overall efficiency and helps the municipality better serve its citizens.
 
 ## Folder Structure
 
