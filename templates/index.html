@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amsterdam.nl RAG System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+    <button id="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="sidebar">
+        <h3>Municipality of Amsterdam</h3>
+        <p>Meldingen Resolver</p>
+    </div>
+
+    <div id="top-bar" class="shifted">
+        <img src="https://www.kuuk.nl/wp-content/uploads/2019/05/logo-gemeente-amsterdam.png" alt="Placeholder Image">
+        <div id="model-switcher-container">
+            <button id="model-switcher">
+                ChatGPT 4o mini
+                <i class="fas fa-chevron-down"></i>
+            </button>
+            <div id="dropdown-menu">
+                <div class="dropdown-item">
+                    <button data-model="ChatGPT 4o mini" class="selected">
+                        <span class="model-icon"><img src="static/images/openai.png" alt="OpenAI Model Icon"></span>
+                        <span class="model-details">
+                            ChatGPT 4o mini
+                            <span class="model-description">OpenAI model</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>    
+    <div id="chat-container">
+        <div id="placeholder-message">
+            <div>Hallo,</div>
+            <div>waar wil je een melding van maken?</div>
+        </div>
+        <div id="svg-container">
+            <img src="static/images/amsterdam-xxx.svg" alt="Amsterdam XXX">
+        </div>
+        <div id="messages"></div>
+    </div>
+    <div id="outer-container">
+            <div id="image-upload-container">
+                <button class="icon-button" id="image-upload-button">
+                    <i class="fa-solid fa-image"></i>
+                    <input type="file" id="image-upload" accept="image/*">
+                </button>
+            </div>
+            <div id="input-wrapper">
+                <div id="image-preview">
+                    <div id="image-container"></div>
+                </div>
+                <textarea id="user-input" placeholder="Vraag iets..." rows="1"></textarea>
+            </div>
+        <div id="button-wrapper">
+            <button class="icon-button" id="send-button" disabled>
+                <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            <button class="icon-button" id="new-session-button" disabled>
+                <i class="fas fa-redo-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="static/scripts.js"></script>
+</body>
+</html>
