@@ -2,6 +2,7 @@ import json
 import re
 import logging
 import os
+import requests
 
 from openai import OpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -25,18 +26,60 @@ def get_melding_attributes(melding, attribute, model_name, chat_history):
         history=get_formatted_chat_history(chat_history)
     )
 
-    client = OpenAI(api_key=cfg.API_KEYS["openai"])
-    completion = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": cfg.SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION},
-            {"role": "user", "content": prompt}
-        ],
-        response_format={"type": "json_object"}
-    )
+    if cfg.ENDPOINT == 'local':
+        client = OpenAI(api_key=cfg.API_KEYS["openai"])
+        completion = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": cfg.SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"}
+        )
 
-    # Load and update attributes based on response
-    response_data = json.loads(completion.choices[0].message.content)
+        # Load and update attributes based on response
+        response_data = json.loads(completion.choices[0].message.content)
+        return response_data if response_data else {}
+    
+    elif cfg.ENDPOINT == 'azure':
+        API_KEY = cfg.API_KEYS["openai_azure"]
+        headers = {
+            "Content-Type": "application/json",
+            "api-key": API_KEY,
+        }
+
+        payload = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                        "type": "text",
+                        "text": cfg.SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION
+                        }
+                    ]
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                        "type": "text",
+                        "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "response_format": {"type": "json_object"}
+        }
+
+    try:
+        response = requests.post(cfg.ENDPOINT_AZURE, headers=headers, json=payload)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise SystemExit(f"Failed to make the request. Error: {e}")
+
+    response_json = response.json()
+    response_data = json.loads(response_json['choices'][0]['message']['content'])
     return response_data if response_data else {}
 
 def select_prompt_template(attribute):
@@ -67,30 +110,72 @@ def generate_image_caption(base64_image):
                 - content (str): Description of image.
                 - total_tokens (int): total tokens used to process image.
         """
-        client = OpenAI(api_key=cfg.API_KEYS["openai"])
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {
+        if cfg.ENDPOINT == 'local':
+            client = OpenAI(api_key=cfg.API_KEYS["openai"])
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Wat staat er op deze afbeelding?"
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}",
+                                "detail": "low"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens = 300
+            )
+            return response.choices[0].message.content
+        
+        elif cfg.ENDPOINT == 'azure':
+            API_KEY = cfg.API_KEYS["openai_azure"]
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": API_KEY,
+            }
+
+            payload = {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": [
+                            {
                             "type": "text",
                             "text": "Wat staat er op deze afbeelding?"
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}",
-                            "detail": "low"
                             }
-                        }
-                    ]
-                }
-            ],
-            max_tokens = 300
-        )
-        return response.choices[0].message.content
+                        ]
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            },
+                        ]
+                    }
+                ]
+            }
+
+            try:
+                response = requests.post(cfg.ENDPOINT_AZURE, headers=headers, json=payload)
+                response.raise_for_status()
+            except requests.RequestException as e:
+                raise SystemExit(f"Failed to make the request. Error: {e}")
+
+            response_json = response.json()
+            return response_json['choices'][0]['message']['content']
 
 
 def get_formatted_chat_history(chat_history):

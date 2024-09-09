@@ -4,9 +4,14 @@ DATA_PATH = '../data'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
+ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
+
 API_KEYS = {
-    "openai": "OPENAI API KEY",
+    "openai": "OpenAI API Key",
+    "openai_azure": "OpenAI Azure API KEY"
 }
+
+ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview"
 
 SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische probleemoplosser. \
             Je doel is om bewoners van Amsterdam te ondersteunen door begripvolle en respectvolle reacties te geven op hun meldingen en klachten. \
