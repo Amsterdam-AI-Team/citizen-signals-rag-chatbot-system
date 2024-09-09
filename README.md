@@ -58,6 +58,10 @@ python3 app.py
 
 This will start the chatbot on your localhost, allowing you to interact with it via a web interface.
 
+### Running via Azure ML
+
+If you wish to run this code via Azure ML services, you should open repository and run app.py in VS Desktop mode. This will ensure the localhost application works properly.
+
 **Note**: You will need an OpenAI API key for answer generation and image processing. This API keys should also be specified in the configuration file. It is possible to use different LLMs of your choice, but doing so will require modifying the code accordingly. 
 
 **Note** Only the melding category 'Zwerfvuil' is now supported. You can add more protocols in the processors.py file.
