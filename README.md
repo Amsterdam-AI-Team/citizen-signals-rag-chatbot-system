@@ -24,7 +24,13 @@ The system is designed to efficiently manage citizen-reported issues, improve re
 git clone https://github.com/Amsterdam-AI-Team/citizen-signals-rag-chatbot-system.git
 ```
 
-2) Install all dependencies:
+2) Install pyaudio driver:
+
+```bash
+sudo apt-get install portaudio19-dev
+```
+
+3) Install all dependencies:
 
 ```bash
 pip install -r requirements.txt
