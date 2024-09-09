@@ -44,8 +44,8 @@ def handle_melding_query():
 
     data = request.json
     melding = data.get('message')
-    model = data.get('model', 'ChatGPT 4o mini')  # Default to 'ChatGPT 4o mini'
-    model_name = 'gpt-4o-mini'
+    model = data.get('model', 'gpt-4o')  # Default to 'ChatGPT 4o'
+    model_name = cfg.model_dict[model]
     image = data.get('image')
 
     if session_active:

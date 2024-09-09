@@ -14,7 +14,7 @@ const imageUploadButton = document.getElementById('image-upload-button');
 const imageUploadInput = document.getElementById('image-upload');
 
 let sessionActive = false;
-let currentModel = "ChatGPT 4o mini";
+let currentModel = "ChatGPT 4o";
 let currentReader = null;
 let isStreaming = false;
 let base64Image = null;
@@ -71,7 +71,7 @@ function displayMessage(text, sender, isLoading = false) {
 
         let modelIconSrc;
         switch (currentModel.toLowerCase()) {
-            case 'chatgpt 4o mini':
+            case 'chatgpt 4o':
                 modelIconSrc = 'static/images/person_icon.png';
                 break;
             default:

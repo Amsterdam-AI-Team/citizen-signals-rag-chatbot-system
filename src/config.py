@@ -11,6 +11,8 @@ API_KEYS = {
     "openai_azure": "OpenAI Azure API KEY"
 }
 
+model_dict = {"ChatGPT 4o": "gpt-4o"}
+
 ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview"
 
 SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische probleemoplosser. \
