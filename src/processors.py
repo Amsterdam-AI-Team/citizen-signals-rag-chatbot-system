@@ -133,14 +133,14 @@ class ZwervuilProcessor:
                 ]
             }
 
-        try:
-            response = requests.post(cfg.ENDPOINT_AZURE, headers=headers, json=payload)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            raise SystemExit(f"Failed to make the request. Error: {e}")
+            try:
+                response = requests.post(cfg.ENDPOINT_AZURE, headers=headers, json=payload)
+                response.raise_for_status()
+            except requests.RequestException as e:
+                raise SystemExit(f"Failed to make the request. Error: {e}")
 
-        response_json = response.json()
-        self.melding_attributes['INITIAL_RESPONSE'] = response_json['choices'][0]['message']['content']
+            response_json = response.json()
+            self.melding_attributes['INITIAL_RESPONSE'] = response_json['choices'][0]['message']['content']
         
     def _build_address_prompt(self):
         """
