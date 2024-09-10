@@ -62,11 +62,15 @@ This will start the chatbot on your localhost, allowing you to interact with it 
 
 If you wish to run this code via Azure ML services, you should open repository and run app.py in VS Desktop mode. This will ensure the localhost application works properly.
 
-**Note**: You will need an OpenAI API key for answer generation and image processing. This API keys should also be specified in the configuration file. It is possible to use different LLMs of your choice, but doing so will require modifying the code accordingly. 
+### Notes
 
-**Note** Only the melding category 'Zwerfvuil' is now supported. You can add more protocols in the processors.py file.
+- You will need an OpenAI API key for answer generation and image processing. This API keys should also be specified in the configuration file. It is possible to use different LLMs of your choice, but doing so will require modifying the code accordingly. 
 
-**Note** Retrieval using RAG is now static (i.e., we provide the same answer format to each zwerfvuil melding). A database and retrieval mechanism should be included to make this more dynamic such that it adheres to your wishes.
+- Only the melding category 'Zwerfvuil' is now supported. You can add more protocols in the processors.py file.
+
+- Retrieval using RAG is now static (i.e., we provide the same answer format to each zwerfvuil melding). A database and retrieval mechanism should be included to make this more dynamic such that it adheres to your wishes.
+
+- Current implementation for reading messages out loud is not compatible with Azure OpenAI API because the tts model is not (yet) supported.
 
 
 ## Contributing
