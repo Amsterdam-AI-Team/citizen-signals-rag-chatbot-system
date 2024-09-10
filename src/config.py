@@ -6,14 +6,14 @@ ATTRIBUTES_FILE = "attributes.json"
 
 ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
 
+ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
+
 API_KEYS = {
     "openai": "OpenAI API Key",
     "openai_azure": "OpenAI Azure API KEY"
 }
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}
-
-ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview"
 
 SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische probleemoplosser. \
             Je doel is om bewoners van Amsterdam te ondersteunen door begripvolle en respectvolle reacties te geven op hun meldingen en klachten. \
@@ -60,7 +60,7 @@ Een type moet alleen worden toegewezen als:
 Geef het bepaalde type terug als een JSON-object met de volgende structuur:
 TYPE: type
 
-Als de melding niet-specifiek is of onvoldoende informatie bevat om een type te bepalen, geef dan een leeg JSON-object terug.
+Als de melding onvoldoende informatie bevat om een type te bepalen, geef dan een leeg JSON-object zonder key en value terug.
 """
 
 MELDING_ADDRESS_TEMPLATE = """

@@ -1,7 +1,7 @@
 import logging
 import requests
 
-from openai import OpenAI
+from openai import OpenAI, AzureOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 from helpers.melding_helpers import (
@@ -93,54 +93,23 @@ class ZwervuilProcessor:
 
         if cfg.ENDPOINT == 'local':
             client = OpenAI(api_key=cfg.API_KEYS["openai"])
-            completion = client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": cfg.SYSTEM_CONTENT_INITIAL_RESPONSE},
-                    {"role": "user", "content": prompt}
-                ]
-            )
-            
-            self.melding_attributes['INITIAL_RESPONSE'] = completion.choices[0].message.content
 
         elif cfg.ENDPOINT == 'azure':
-            API_KEY = cfg.API_KEYS["openai_azure"]
-            headers = {
-                "Content-Type": "application/json",
-                "api-key": API_KEY,
-            }
+            client = AzureOpenAI(
+                azure_endpoint = cfg.ENDPOINT_AZURE, 
+                api_key=cfg.API_KEYS["openai_azure"],  
+                api_version="2024-02-15-preview"
+            )
 
-            payload = {
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": [
-                            {
-                            "type": "text",
-                            "text": cfg.SYSTEM_CONTENT_INITIAL_RESPONSE
-                            }
-                        ]
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                            "type": "text",
-                            "text": prompt
-                            }
-                        ]
-                    }
-                ]
-            }
-
-            try:
-                response = requests.post(cfg.ENDPOINT_AZURE, headers=headers, json=payload)
-                response.raise_for_status()
-            except requests.RequestException as e:
-                raise SystemExit(f"Failed to make the request. Error: {e}")
-
-            response_json = response.json()
-            self.melding_attributes['INITIAL_RESPONSE'] = response_json['choices'][0]['message']['content']
+        completion = client.chat.completions.create(
+            model=self.model_name,
+            messages=[
+                {"role": "system", "content": cfg.SYSTEM_CONTENT_INITIAL_RESPONSE},
+                {"role": "user", "content": prompt}
+            ]
+        )
+            
+        self.melding_attributes['INITIAL_RESPONSE'] = completion.choices[0].message.content
         
     def _build_address_prompt(self):
         """

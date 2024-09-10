@@ -94,10 +94,10 @@ def new_session():
     session_active = False
 
     # Remove the session file if it exists
-    if os.path.exists('session.json'):
-        os.remove('session.json')
-    if os.path.exists('attributes.json'):
-        os.remove('attributes.json')
+    if os.path.exists(cfg.SESSION_FILE):
+        os.remove(cfg.SESSION_FILE)
+    if os.path.exists(cfg.ATTRIBUTES_FILE):
+        os.remove(cfg.ATTRIBUTES_FILE)
 
     return jsonify({"response": "New session started. You can now ask your questions."})
 
