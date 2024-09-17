@@ -61,6 +61,7 @@ def select_prompt_template(attribute):
     """
     templates = {
         'TYPE': cfg.MELDING_TYPE_TEMPLATE,
+        'SUBTYPE': cfg.MELDING_SUBTYPE_AFVAL_TEMPLATE,
         'ADDRESS': cfg.MELDING_ADDRESS_TEMPLATE
     }
     return ChatPromptTemplate.from_template(templates.get(attribute))

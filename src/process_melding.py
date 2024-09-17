@@ -43,15 +43,16 @@ class MeldingProcessor:
             extracted_attributes = get_melding_attributes(self.melding, 'TYPE', self.model_name, self.chat_history)
             if extracted_attributes:
                 self.melding_attributes.update(extracted_attributes)
+                self.melding_attributes['INITIAL_MELDING'] = self.melding
             else:
                 add_chat_response(self.chat_history, self.melding, ["Kan je iets uitgebreider aangeven waar je een melding van zou willen maken?"])
                 return
 
         # Delegate melding to correct processor given type
-        if self.melding_attributes['TYPE'] == 'Zwerfvuil':
-            from processors import ZwervuilProcessor
-            processor = ZwervuilProcessor(self.melding, self.model_name, self.base64_image, self.chat_history, self.melding_attributes)
-            processor.process_zwervuil()
+        if self.melding_attributes['TYPE'].lower() == 'afval':
+            from processors import AfvalProcessor
+            processor = AfvalProcessor(self.melding, self.model_name, self.base64_image, self.chat_history, self.melding_attributes)
+            processor.process_afval()
             self.chat_history = processor.chat_history
             self.melding_attributes = processor.melding_attributes
         else:
