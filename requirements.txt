@@ -4,6 +4,7 @@ google-generativeai
 groq
 sounddevice
 PyAudio
+pyproj
 tqdm
 langchain==0.2.1
 langchain-cli==0.0.23
