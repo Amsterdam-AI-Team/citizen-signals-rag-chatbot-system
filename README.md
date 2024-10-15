@@ -66,10 +66,6 @@ If you wish to run this code via Azure ML services, you should open repository a
 
 - You will need an OpenAI API key for answer generation and image processing. This API keys should also be specified in the configuration file. It is possible to use different LLMs of your choice, but doing so will require modifying the code accordingly. 
 
-- Only the melding type 'Afval' and subtypes 'restafval' (e.g., garbage bags) and 'grof afval' (e.g., sofas and chairs) is now supported. You can add more protocols in the processors.py file.
-
-- Retrieval using RAG for type 'Afval' is now dynamic and pulls garbage collecting times given an address. The prompt which is created to format the answer which includes these times could be further tweaked for better alignment with the melding conversation.
-
 - Current implementation for reading messages out loud is not compatible with Azure OpenAI API because the tts model is not (yet) supported.
 
 
