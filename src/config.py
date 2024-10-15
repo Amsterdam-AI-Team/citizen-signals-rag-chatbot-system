@@ -4,7 +4,7 @@ DATA_PATH = '../data'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
-ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
+ENDPOINT = 'local' # set to 'local' if you wish to run locally using personal OpenAI API key
 
 ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
@@ -47,48 +47,28 @@ Houd de reactie kort en bondig, zonder aan- of afkondiging, en vermijd het noeme
 
 
 MELDING_TYPE_TEMPLATE = """
---------------------
-MELDING: 
-{melding}
+Melding: {melding}
 
---------------------
+1. Analyseer de melding: 
+Bepaal of de melding duidelijk aangeeft wat het probleem is, en of deze concreet genoeg is om door de verantwoordelijke werknemers opgepakt te worden.
+- Is het probleem specifiek en gedetailleerd omschreven?
 
-INSTRUCTIES:
-Bepaal het type van de MELDING alleen als er voldoende specifieke en relevante informatie aanwezig is die overeenkomt met een bepaald probleem. Enkele voorbeelden van typen zijn: Kapotte straatverlichting en afval.
-Je hoeft je niet te beperken tot deze voorbeelden; als je zelf iets beter vindt passen, mag dat ook.
+2. Onderwerp toewijzen:
+Als de melding voldoet aan bovenstaande criteria, wijs een specifiek onderwerp toe dat het probleem beschrijft. Kies een onderwerp dat relevant is voor gemeentelijke diensten, zoals:
+- Vuilnis en afval
+- Openbare ruimte (zoals parken, trottoirs, straatmeubilair)
+- Verkeer en parkeren
+- Straatverlichting
+- Overlast (geluid, bouw, enz.)
+- Water en riolering
 
-Een type moet alleen worden toegewezen als:
-1. De melding specifieke details bevat over het probleem.
-2. De informatie duidelijk overeenkomt met een van de genoemde categorieën of een vergelijkbaar probleem.
-
-Geef het bepaalde type terug als een JSON-object met de volgende structuur:
+3. Outputformaat:
+Als een onderwerp kan worden toegewezen, geef dan het type van de melding als een JSON-object in de volgende structuur:
 TYPE: type
 
-Als de melding onvoldoende informatie bevat om een type te bepalen, geef dan een leeg JSON-object zonder key en value terug.
+Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en value terug.
 """
 
-MELDING_SUBTYPE_AFVAL_TEMPLATE = """
---------------------
-GESPREKSGESCHIEDENIS: 
-{history}
-
---------------------
-MELDING: 
-{melding}
-
---------------------
-
-INSTRUCTIES:
-Bepaal het subtype melding gegeven de GESPREKSGESCHIEDENIS en MELDING.
-Subtypen waaruit je kan kiezen zijn restafval en grof afval.
-Restafval zijn bijvoorbeeld (kleine) vuilniszakken.
-Grof afval zijn bijvoorbeeld banken, stoelen, kasten.
-
-Geef het bepaalde type terug als een JSON-object met de volgende structuur:
-SUBTYPE: subtype
-
-Als de melding onvoldoende informatie bevat om een type te bepalen, geef dan een leeg JSON-object zonder key en value terug.
-"""
 
 MELDING_ADDRESS_TEMPLATE = """
 --------------------
@@ -110,6 +90,41 @@ Geef gevonden adresgegevens terug als een JSON-object met de volgende velden:
 STRAATNAAM: straatnaam of leeg als niet aanwezig
 HUISNUMMER: huisnummer of leeg als niet aanwezig
 POSTCODE: postcode of leeg als niet aanwezig
+"""
+
+AGENTIC_AI_AGENT_PROMPT_PREFIX = """
+You are an AI assistant tasked with resolving the following melding (incident report) from a citizen:
+"{melding}"
+
+The chat history is:
+"{chat_history}"
+
+Your goal is to create a plan to retrieve and format information that could be shared with the melder (citizen), such that the melding does not need to be escalated into the melding system.
+
+If you find useful information using the tools, provide that information in your Final Answer.
+
+If you cannot find any useful information, respond with:
+"No useful information was found. Your melding will be escalated in the system."
+"""
+
+AGENTIC_AI_AGENT_PROMPT_FORMAT_INSTRUCTIONS = """
+Use the following format:
+
+Question: the melding to be resolved
+Thought: your reasoning about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Observation can repeat N times)
+Thought: I have gathered all possible information.
+Final Answer: the response to the melder
+"""
+
+AGENTIC_AI_AGENT_PROMPT_SUFFIX = """
+Begin!
+
+Question: {melding}
+Thought: {agent_scratchpad}
 """
 
 
