@@ -7,8 +7,8 @@ from agents.bgt_features_agent import BGTAgent
 from agents.waste_collection_agent import WasteCollectionAgent
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
-from langchain.llms import OpenAI, AzureOpenAI
 from langchain.memory import ConversationBufferMemory
+from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
 
 # Configure logging
 # logging.basicConfig(level=logging.INFO)
@@ -50,16 +50,19 @@ class CentralAgent:
     def initialize_llm(self):
         """Initialize the language model based on the configuration."""
         if cfg.ENDPOINT == 'local':
-            llm = OpenAI(api_key=cfg.API_KEYS["openai"], temperature=0)
-        elif cfg.ENDPOINT == 'azure':
-            llm = AzureOpenAI(
+            llm = ChatOpenAI(model_name='gpt-4o',
+                api_key=cfg.API_KEYS["openai"], 
+                temperature=0
+            )
+        elif cfg.ENDPOINT == 'azure': #TODO this defaults to gpt-3.5-turbo, figure out why.
+            llm = AzureChatOpenAI(
+                deployment_name = 'gpt-4o',
                 azure_endpoint=cfg.ENDPOINT_AZURE,
                 api_key=cfg.API_KEYS["openai_azure"],
-                api_version="2024-02-15-preview",
+                api_version="2024-08-01-preview",
                 temperature=0,
             )
-        else:
-            llm = OpenAI(api_key=cfg.API_KEYS["openai"], temperature=0)
+        print(f"The OpenAI LLM is using model: {llm.model_name}")
         return llm
 
     def initialize_tools(self):
@@ -144,7 +147,7 @@ class CentralAgent:
 
         # Run the agent with the input prompt
         try:
-            response = self.agent_executor.run(inputs)
+            response = self.agent_executor.invoke(inputs)
             # Store the response in melding_attributes
             self.melding_attributes['AGENTIC_INFORMATION'] = response
         except Exception as e:
