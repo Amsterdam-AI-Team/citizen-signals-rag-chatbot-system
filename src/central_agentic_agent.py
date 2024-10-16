@@ -10,9 +10,6 @@ from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
 from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
 
-# Configure logging
-# logging.basicConfig(level=logging.INFO)
-
 class CentralAgent:
     """
     An improved agent that builds and executes AI-driven plans to retrieve useful information and generate 
