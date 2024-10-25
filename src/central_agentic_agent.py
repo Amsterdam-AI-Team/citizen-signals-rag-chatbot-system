@@ -5,6 +5,7 @@ from typing import Optional
 import config as cfg
 from agents.bgt_features_agent import BGTAgent
 from agents.waste_collection_agent import WasteCollectionAgent
+from agents.policy_retriever_agent import PolicyRetrieverAgent
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
@@ -51,12 +52,13 @@ class CentralAgent:
                 api_key=cfg.API_KEYS["openai"], 
                 temperature=0
             )
-        elif cfg.ENDPOINT == 'azure': #TODO this defaults to gpt-3.5-turbo, figure out why.
+        elif cfg.ENDPOINT == 'azure':
             llm = AzureChatOpenAI(
-                deployment_name = 'gpt-4o',
+                deployment_name='gpt-4o',
+                model_name='gpt-4o',
                 azure_endpoint=cfg.ENDPOINT_AZURE,
                 api_key=cfg.API_KEYS["openai_azure"],
-                api_version="2024-08-01-preview",
+                api_version="2024-02-15-preview",
                 temperature=0,
             )
         print(f"The OpenAI LLM is using model: {llm.model_name}")
@@ -79,6 +81,14 @@ class CentralAgent:
                 description=(
                     "Use this tool to get the BGT function of a given address "
                     "in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'. Returns 'No information found' if unsuccessful."
+                ),
+            ),
+            Tool(
+                name="GetPolicyInfo",
+                func=partial(self.get_policy_info),
+                description=(
+                    "Use this tool to obtain policy information from the municipality website that is related to the melding "
+                    "in the format 'MELDING'. Returns 'No information found' if unsuccessful."
                 ),
             ),
         ]
@@ -144,7 +154,7 @@ class CentralAgent:
 
         # Run the agent with the input prompt
         try:
-            response = self.agent_executor.invoke(inputs)
+            response = self.agent_executor.invoke(inputs)['output']
             # Store the response in melding_attributes
             self.melding_attributes['AGENTIC_INFORMATION'] = response
         except Exception as e:
@@ -201,6 +211,28 @@ class CentralAgent:
                 return "No information found"
         except Exception as e:
             logging.error(f"Failed to get BGT info: {e}")
+            return "No information found"
+        
+    def get_policy_info(self, melding: str) -> str:
+        """
+        Retrieve BGT (Basisregistratie Grootschalige Topografie) information based on the provided address.
+
+        Args:
+            address (str): The address in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'.
+
+        Returns:
+            str: BGT information or 'No information found' if unsuccessful.
+        """
+        logging.info(f"Retrieving policy info for melding: {melding}")
+        try:
+            melding = self.melding_attributes['MELDING']
+            policy_retriever_info_tool = PolicyRetrieverAgent(melding)
+            policy_info = policy_retriever_info_tool.retrieve_policy()
+            if not policy_info:
+                return "No information found"
+            return policy_info
+        except Exception as e:
+            logging.error(f"Failed to get waste collection info: {e}")
             return "No information found"
 
 
