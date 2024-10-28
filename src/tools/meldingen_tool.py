@@ -107,6 +107,9 @@ class MeldingenRetrieverTool:
 
 
     def retrieve_meldingen(self, query, top_k=5, address=None):
+        logging.info(f"Retrieving top {top_k} for query: {query}")
+        logging.info(f"Known address: {address}")
+
         if address:
             meldingen_data, corpus_embeddings = self.filter_meldingen_embeddings(address)
 
