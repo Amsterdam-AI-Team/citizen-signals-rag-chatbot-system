@@ -4,6 +4,22 @@ DOCUMENTS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
+HUGGING_CACHE = "/home/azureuser/cloudfiles/code//hugging_cache"
+
+# Main folders
+meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
+meldingen_out_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/processed_data/"
+amsterdam_nl_scrapped_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/amsterdam_nl_scraper/amsterdam_nl_data/html/scraped/"
+
+source = "20240821_meldingen_results_prod"
+meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
+
+index_storage_folder = f"{meldingen_out_folder}/indices"
+
+embedding_model_name = "intfloat/multilingual-e5-large"
+# embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
+# embeddng_model_name = "NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers"
+
 ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
 
 ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"

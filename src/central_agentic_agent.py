@@ -1,11 +1,13 @@
 import logging
 from functools import partial
 from typing import Optional
+import os
 
 import config as cfg
 from tools.bgt_features_tool import BGTTool
 from tools.waste_collection_tool import WasteCollectionTool
 from tools.policy_retriever_tool import PolicyRetrieverTool
+from tools.meldingen_tool import MeldingenRetrieverTool
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
@@ -72,9 +74,15 @@ class CentralAgent:
         huisnummer = self.melding_attributes['HUISNUMMER']
         postcode = self.melding_attributes['POSTCODE']
 
+        os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
+        os.environ["HF_HOME"] = cfg.HUGGING_CACHE
+
         self.WasteCollectionTool = WasteCollectionTool(straatnaam, huisnummer, postcode)
         self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
         self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
+
+        self.MeldingenRetrieverTool = MeldingenRetrieverTool(
+            cfg.embedding_model_name, cfg.meldingen_dump, cfg.index_storage_folder)
 
         tools = [
             Tool(
@@ -99,6 +107,23 @@ class CentralAgent:
                 description=(
                     "Use this tool to obtain policy information from the municipality website that is related to the melding. "
                     "in the format 'MELDING'. Returns 'No information found' if unsuccessful."
+                ),
+            ),
+            Tool(
+                name="GetDuplicateMeldingen",
+                func=partial(self.get_duplicate_meldingen),
+                description=(
+                    "Always use this tool to obtain a list of possibly duplicate meldingen"
+                    "for a melding in the format 'MELDING'"# and an address in the format 'STRAATNAAM HUISNUMMER, POSTCODE"
+                    "which might indicate that the issue is already known and should not be reported again"
+                ),
+            ),
+            Tool(
+                name="GetSimilarMeldingen",
+                func=partial(self.get_similar_meldingen),
+                description=(
+                    "Use this tool to obtain a list of possibly similar meldingen together with their responses"
+                    "to understand how similar cases from different locations were previously solved"
                 ),
             ),
         ]
@@ -237,6 +262,56 @@ class CentralAgent:
             logging.error(f"Failed to get waste collection info: {e}")
             return "No information found"
 
+    def get_duplicate_meldingen(self, melding: str) -> list[str]:
+        """
+        Retrieve (possibly) duplicate meldingen
+
+        Args:
+            melding (str): The melding.
+            address (str): The address in the format 'STRAATNAAM HUISNUMMER, POSTCODE'.
+
+        Returns:
+            [str]: a list of possible duplicates in the neighborhood.
+        """
+        logging.info(f"Retrieving duplicates of melding: {melding}")
+
+        try:
+            straatnaam = self.melding_attributes['STRAATNAAM']
+            huisnummer = self.melding_attributes['HUISNUMMER']
+            postcode = self.melding_attributes['POSTCODE']
+            address = f"{straatnaam} {huisnummer}, {postcode}"
+            melding = self.melding_attributes['MELDING']
+
+            return self.MeldingenRetrieverTool.retrieve_meldingen(melding, address=address, top_k=5)
+
+        except Exception as e:
+            logging.error(f"Failed to retrieve relevant info: {e}")
+            return "No information found"
+
+
+    def get_similar_meldingen(self, melding: str) -> list[str]:
+        """
+        Retrieve related meldingen
+
+        Args:
+            melding (str): The melding.
+            address (str): The address in the format 'STRAATNAAM HUISNUMMER, POSTCODE'.
+
+        Returns:
+            [str]: a list of relevant meldingen together with examples answers.
+        """
+
+        logging.info(f"Retrieving duplicates of melding: {melding}")
+
+        try:
+            melding = self.melding_attributes['MELDING']
+            return self.MeldingenRetrieverTool.retrieve_meldingen(melding, top_k=5)
+
+        except Exception as e:
+            logging.error(f"Failed to retrieve relevant info: {e}")
+            return "No information found"
+
+
 
 # Example usage:
 if __name__ == "__main__":
@@ -252,4 +327,3 @@ if __name__ == "__main__":
         melding_attributes=melding_attributes,
     )
     agent.build_and_execute_plan()
-    
