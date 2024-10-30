@@ -3,9 +3,9 @@ from functools import partial
 from typing import Optional
 
 import config as cfg
-from agents.bgt_features_agent import BGTAgent
-from agents.waste_collection_agent import WasteCollectionAgent
-from agents.policy_retriever_agent import PolicyRetrieverAgent
+from tools.bgt_features_tool import BGTTool
+from tools.waste_collection_tool import WasteCollectionTool
+from tools.policy_retriever_tool import PolicyRetrieverTool
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
@@ -26,11 +26,8 @@ class CentralAgent:
         Initialize the CentralAgent with the required attributes to handle the melding.
 
         Args:
-            melding (dict): The melding (incident) details.
-            model_name (str): The name of the AI model to use for generating responses.
-            base64_image (str, optional): Base64-encoded image, if provided in the melding.
-            chat_history (list, optional): List of previous chat messages with the user.
             melding_attributes (dict, optional): Additional attributes related to the melding.
+            chat_history (list, optional): List of previous chat messages with the user.
         """
         self.melding_attributes = melding_attributes or {}
         self.chat_history = chat_history or []
@@ -46,7 +43,9 @@ class CentralAgent:
         self.agent_executor = self.initialize_agent_executor()
 
     def initialize_llm(self):
-        """Initialize the language model based on the configuration."""
+        """
+        Initialize the language model based on the configuration.
+        """
         if cfg.ENDPOINT == 'local':
             llm = ChatOpenAI(model_name='gpt-4o',
                 api_key=cfg.API_KEYS["openai"], 
@@ -65,7 +64,18 @@ class CentralAgent:
         return llm
 
     def initialize_tools(self):
-        """Initialize the tools available to the agent."""
+        """
+        Initialize the tools available to the agent.
+        """
+        melding = self.melding_attributes['MELDING']
+        straatnaam = self.melding_attributes['STRAATNAAM']
+        huisnummer = self.melding_attributes['HUISNUMMER']
+        postcode = self.melding_attributes['POSTCODE']
+
+        self.WasteCollectionTool = WasteCollectionTool(straatnaam, huisnummer, postcode)
+        self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
+        self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
+
         tools = [
             Tool(
                 name="GetWasteCollectionInfo",
@@ -87,7 +97,7 @@ class CentralAgent:
                 name="GetPolicyInfo",
                 func=partial(self.get_policy_info),
                 description=(
-                    "Use this tool to obtain policy information from the municipality website that is related to the melding "
+                    "Use this tool to obtain policy information from the municipality website that is related to the melding. "
                     "in the format 'MELDING'. Returns 'No information found' if unsuccessful."
                 ),
             ),
@@ -95,7 +105,9 @@ class CentralAgent:
         return tools
 
     def initialize_agent_executor(self):
-        """Initialize the agent executor with the specified tools and LLM."""
+        """
+        Initialize the agent executor with the specified tools and LLM.
+        """
         prompt = self.create_custom_prompt()
         llm_chain = LLMChain(llm=self.llm, prompt=prompt)
         agent = ZeroShotAgent(llm_chain=llm_chain, tools=self.tools, allowed_tools=[tool.name for tool in self.tools])
@@ -108,9 +120,9 @@ class CentralAgent:
         return agent_executor
 
     def create_custom_prompt(self):
-        """Create a custom prompt template for the agent using ZeroShotAgent.create_prompt."""
-
-        # Create the prompt using ZeroShotAgent's create_prompt method
+        """
+        Create a custom prompt template for the agent using ZeroShotAgent.create_prompt.
+        """
         prompt = ZeroShotAgent.create_prompt(
             tools=self.tools,
             prefix=cfg.AGENTIC_AI_AGENT_PROMPT_PREFIX,
@@ -176,11 +188,7 @@ class CentralAgent:
         """
         logging.info(f"Retrieving waste collection info for address: {address}")
         try:
-            straatnaam = self.melding_attributes['STRAATNAAM']
-            huisnummer = self.melding_attributes['HUISNUMMER']
-            postcode = self.melding_attributes['POSTCODE']
-            waste_collection_agent = WasteCollectionAgent(straatnaam, huisnummer, postcode)
-            waste_collection_info = waste_collection_agent.get_collection_times()
+            waste_collection_info = self.WasteCollectionTool.get_collection_times()
             if not waste_collection_info:
                 return "No information found"
             return waste_collection_info
@@ -200,13 +208,9 @@ class CentralAgent:
         """
         logging.info(f"Retrieving BGT info for address: {address}")
         try:
-            straatnaam = self.melding_attributes['STRAATNAAM']
-            huisnummer = self.melding_attributes['HUISNUMMER']
-            postcode = self.melding_attributes['POSTCODE']
-            bgt_info_agent = BGTAgent(straatnaam, huisnummer, postcode)
-            gdf_bgt_info = bgt_info_agent.get_bgt_features_at_coordinate()
+            gdf_bgt_info = self.BGTTool.get_bgt_features_at_coordinate()
             if gdf_bgt_info is not None and not gdf_bgt_info.empty:
-                return bgt_info_agent.get_functie_from_gdf(gdf_bgt_info)
+                return self.BGTTool.get_functie_from_gdf(gdf_bgt_info)
             else:
                 return "No information found"
         except Exception as e:
@@ -225,9 +229,7 @@ class CentralAgent:
         """
         logging.info(f"Retrieving policy info for melding: {melding}")
         try:
-            melding = self.melding_attributes['MELDING']
-            policy_retriever_info_tool = PolicyRetrieverAgent(melding)
-            policy_info = policy_retriever_info_tool.retrieve_policy()
+            policy_info = self.PolicyRetrieverTool.retrieve_policy()
             if not policy_info:
                 return "No information found"
             return policy_info
@@ -239,7 +241,7 @@ class CentralAgent:
 # Example usage:
 if __name__ == "__main__":
     melding_attributes = {
-        "MELDING": "There is grofvuil next to a container in front of my house.",
+        "MELDING": "Er ligt grofvuil naast een container bij mij in de straat.",
         "STRAATNAAM": "Keizersgracht",
         "HUISNUMMER": "75",
         "POSTCODE": "1015CE"
@@ -250,3 +252,4 @@ if __name__ == "__main__":
         melding_attributes=melding_attributes,
     )
     agent.build_and_execute_plan()
+    

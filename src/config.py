@@ -10,10 +10,11 @@ ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
 API_KEYS = {
     "openai": "OpenAI API KEY",
-    "openai_azure": "OpenAI Azure API KEY"
+    "openai_azure": "d9417c3021824d9a9825c8aa80297624"
 }
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}
+summarize_melding_for_policy_retrieval = False # set to True if you wish to summarize melding for policy retrieval
 
 SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische probleemoplosser. \
             Je doel is om bewoners van Amsterdam te ondersteunen door begripvolle en respectvolle reacties te geven op hun meldingen en klachten. \

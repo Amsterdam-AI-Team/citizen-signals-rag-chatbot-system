@@ -12,17 +12,18 @@ from helpers.embedding_helpers import OpenAIEmbeddingFunction
 # Environment setup
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-# Fuse to blob storage to access chroma db and policy documents
-os.system('sudo blobfuse /home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen --tmp-path=/mnt/resource/blobfusetmp_meldingen --config-file=/home/azureuser/cloudfiles/code/blobfuse/fuse_connection_meldingen.cfg -o attr_timeout=3600 -o entry_timeout=3600 -o negative_timeout=3600 -o allow_other -o nonempty')
-
-class PolicyRetrieverAgent:
+class PolicyRetrieverTool:
 
     def __init__(self, melding):
         self.melding = melding
+        if cfg.summarize_melding_for_policy_retrieval:
+            self.melding = self.summarize_melding()
+        
+        self.db = Chroma(persist_directory=cfg.CHROMA_PATH, 
+                         embedding_function=OpenAIEmbeddingFunction())
 
     def retrieve_policy(self):
-        summarized_melding = self.summarize_melding()
-        context_text, sources = self.search_db(summarized_melding)
+        context_text, sources = self.search_db(self.melding)
         prompt = self.create_prompt(context_text)
         response_text = self.invoke_model(prompt)
         formatted_response = self.format_response(response_text, sources)
@@ -50,10 +51,8 @@ class PolicyRetrieverAgent:
                 - context_text (str): Combined context text from the search results.
                 - sources (list): List of sources used in the search.
         """
-        db = Chroma(persist_directory=cfg.CHROMA_PATH, embedding_function=OpenAIEmbeddingFunction())
-
         summarized_results = (
-            db.similarity_search_with_score(summarized_melding, k=5) if summarized_melding else []
+            self.db.similarity_search_with_score(summarized_melding, k=5) if summarized_melding else []
         )
 
         combined_results = {
@@ -120,16 +119,14 @@ class PolicyRetrieverAgent:
         formatted_response = f"Response: {response_text}\nSources: {', '.join(sources)}"
         return formatted_response
 
-def main():
-    """
-    Main function to parse arguments, load session data, process the query, 
-    and save the session data.
-    """
+if __name__ == '__main__':
+    # Specify the melding
     melding = 'Er ligt grofvuil naast een container bij mij in de straat.'
 
-    processor = PolicyRetrieverAgent(melding)
-    policy = processor.retrieve_policy()
-    print(policy)
+    # Instantiate the PolicyRetrieverTool class with the melding
+    fetcher = PolicyRetrieverTool(melding)
 
-if __name__ == "__main__":
-    main()
+    # Retrieve policy
+    policy = fetcher.retrieve_policy()
+    print(policy)
+    
