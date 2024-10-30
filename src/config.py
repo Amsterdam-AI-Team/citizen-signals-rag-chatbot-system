@@ -10,7 +10,7 @@ ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
 API_KEYS = {
     "openai": "OpenAI API KEY",
-    "openai_azure": "d9417c3021824d9a9825c8aa80297624"
+    "openai_azure": "OpenAI Azure API KEY"
 }
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}
