@@ -1,7 +1,7 @@
 import requests
 from pyproj import Transformer
 
-class WasteCollectionAgent:
+class WasteCollectionTool:
     """
     A class to fetch and process waste collection information for a given address in Amsterdam.
 
@@ -187,3 +187,15 @@ class WasteCollectionAgent:
             str: A formatted string with collection times for each waste category.
         """
         return self._process_waste_info()
+    
+if __name__ == '__main__':
+    # Specify the address
+    address = 'Amstel, 10, 1017AA'  # Replace with your desired address
+
+    # Instantiate the WasteCollectionTool class with the address
+    fetcher = WasteCollectionTool('Schalk Burgerstraat', '103', '1092KP')
+
+    # Get waste collection info at specified address
+    waste_collection_info = fetcher.get_collection_times()
+    print(waste_collection_info)
+    

@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import contextily as ctx
 
-class BGTAgent:
+class BGTTool:
     """
     A class to fetch and process BGT (Basisregistratie Grootschalige Topografie) features for a given address.
 
@@ -297,10 +297,9 @@ if __name__ == '__main__':
     # Specify the address
     address = 'Amstel, 10, 1017AA'  # Replace with your desired address
 
-    # Instantiate the BGTAgent class with the address
-    fetcher = BGTAgent('Schalk Burgerstraat', '103', '1092KP')
+    # Instantiate the BGTTool class with the address
+    fetcher = BGTTool('Schalk Burgerstraat', '103', '1092KP')
 
     # Get BGT features at the coordinate
     bgt_functie = fetcher.get_bgt_features_at_coordinate()
-
     print(bgt_functie)

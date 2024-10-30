@@ -1,10 +1,10 @@
 # Constants
-CHROMA_PATH = "../chroma"
-DATA_PATH = '../data'
+CHROMA_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/amsterdam.nl/20241007_dump/chroma'
+DOCUMENTS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
-ENDPOINT = 'local' # set to 'local' if you wish to run locally using personal OpenAI API key
+ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
 
 ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
@@ -14,6 +14,7 @@ API_KEYS = {
 }
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}
+summarize_melding_for_policy_retrieval = False # set to True if you wish to summarize melding for policy retrieval
 
 SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische probleemoplosser. \
             Je doel is om bewoners van Amsterdam te ondersteunen door begripvolle en respectvolle reacties te geven op hun meldingen en klachten. \
@@ -22,11 +23,6 @@ SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische problee
 SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION = "Je bent een behulpzame probleemoplosser. \
             Je doel is om bewoners van Amsterdam te ondersteunen door specifieke details te extraheren uit meldingen. \
                 Reageer met de gevraagde informatie in een duidelijk gestructureerd JSON-formaat."
-
-SYSTEM_CONTENT_RAG_FOR_WASTE = "Je bent een behulpzame probleemoplosser. \
-            Je doel is om bewoners van Amsterdam informatie te verschaffen om hun melding vroegtijdig \
-                op te lossen voordat de melding/probleem daadwerkelijk in het meldingsysteem terecht komt en wordt opgepakt door een mens."
-
 
 INITIAL_MELDING_TEMPLATE = """
 --------------------
@@ -44,7 +40,6 @@ Schrijf een passende en empathische eerste reactie op deze MELDING.
 Toon begrip voor de situatie en de gevoelens van de melder. Gebruik eventueel de informatie uit TYPE MELDING om de reactie relevanter te maken. 
 Houd de reactie kort en bondig, zonder aan- of afkondiging, en vermijd het noemen van eventuele vervolgstappen.
 """
-
 
 MELDING_TYPE_TEMPLATE = """
 Melding: {melding}
@@ -68,7 +63,6 @@ TYPE: type
 
 Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en value terug.
 """
-
 
 MELDING_ADDRESS_TEMPLATE = """
 --------------------
@@ -127,7 +121,6 @@ Question: {melding}
 Thought: {agent_scratchpad}
 """
 
-
 RESTAFVAL_COLLECTION_INFO_RAG_TEMPLATE = """
 --------------------
 AFVALWIJZER INFORMATIE:
@@ -152,4 +145,31 @@ Controleer of de AFVALWIJZER INFORMATIE relevante details bevat met betrekking t
 Het is belangrijk dat de melder van het probleem niet als veroorzaker van het probleem wordt gezien.
 Zorg dat het bericht een geschikte toon heeft, rekening houdend met de MELDING. 
 Geef ALLEEN de informatie terug die voorkomt uit het stappenplan omdat het onderdeel is van een lopend gesprek.
+"""
+
+SUMMARIZE_MELDING_TEMPLATE = """
+
+MELDING: {melding}
+--------------------
+
+INSTRUCTIES:
+Geef een samenvatting van de MELDING als een zoekterm.
+Geef ALLEEN deze geparafraseerde zoekterm terug.
+"""
+
+POLICY_MELDING_TEMPLATE = """
+--------------------
+DOCUMENTEN: 
+{context}
+--------------------
+
+
+MELDING: {melding}
+--------------------
+
+INSTRUCTIES:
+Kijk of er informatie in de DOCUMENTEN staat die van pas kan komen bij het oplossen van de melding.
+Dat zou bijvoorbeeld algemene informatie of beleid over het onderwerp kunnen zijn.
+Houd je antwoorden gegrond in de inhoud in de DOCUMENTEN.
+Je mag ook eventuele links meegegeven die leiden naar de webpagina waar het antwoord te vinden is.
 """

@@ -1,7 +1,10 @@
 flask
 openai
+contextily
+geopandas
 google-generativeai
 groq
+matplotlib
 sounddevice
 PyAudio
 pyproj
