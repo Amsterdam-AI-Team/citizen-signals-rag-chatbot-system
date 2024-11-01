@@ -1,7 +1,7 @@
 # Constants
-CHROMA_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/amsterdam.nl/20241007_dump/chroma'
-DOCUMENTS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
-PERMITS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/permits/permits_related_to_license_plates/'
+CHROMA_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/amsterdam.nl/20241007_dump/chroma'
+DOCUMENTS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
+PERMITS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_license_plates/'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
