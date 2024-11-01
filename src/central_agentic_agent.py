@@ -56,7 +56,7 @@ class CentralAgent:
             )
         elif cfg.ENDPOINT == 'azure':
             llm = AzureChatOpenAI(
-                deployment_name='gpt-35-turbo',
+                deployment_name='gpt-4o',
                 model_name='gpt-4o',
                 azure_endpoint=cfg.ENDPOINT_AZURE,
                 api_key=cfg.API_KEYS["openai_azure"],
