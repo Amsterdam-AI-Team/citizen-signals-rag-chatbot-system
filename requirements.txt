@@ -19,3 +19,6 @@ sentence_transformers
 faiss-cpu
 codecarbon
 pdfplumber
+transformers
+accelerate>=0.26.0
+torch
