@@ -1,6 +1,7 @@
 # Constants
 CHROMA_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/amsterdam.nl/20241007_dump/chroma'
 DOCUMENTS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
+PERMITS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/rndaistoragemeldingen/raw_data/permits/permits_related_to_license_plates/'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
@@ -102,6 +103,26 @@ HUISNUMMER: huisnummer of leeg als niet aanwezig
 POSTCODE: postcode of leeg als niet aanwezig
 """
 
+LICENSE_PLATE_TEMPLATE = """
+--------------------
+GESPREKSGESCHIEDENIS: 
+{history}
+
+--------------------
+MELDING: 
+{melding}
+
+--------------------
+
+INSTRUCTIES:
+Bepaal of er een kenteken nummer vermeld is in de GESPREKSGESCHIEDENIS en/of MELDING.
+
+Geef een gevonden kenteken nummer terug als een JSON-object met de volgende velden:
+LICENSE_PLATE: kenteken
+
+Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en value terug.
+"""
+
 AGENTIC_AI_AGENT_PROMPT_PREFIX = """
 You are an AI assistant tasked with resolving the following melding (incident report) from a citizen:
 "{melding}"
@@ -189,4 +210,3 @@ Dat zou bijvoorbeeld algemene informatie of beleid over het onderwerp kunnen zij
 Houd je antwoorden gegrond in de inhoud in de DOCUMENTEN.
 Je mag ook eventuele links meegegeven die leiden naar de webpagina waar het antwoord te vinden is.
 """
-
