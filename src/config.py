@@ -7,6 +7,14 @@ ATTRIBUTES_FILE = "attributes.json"
 
 HUGGING_CACHE = "/home/azureuser/cloudfiles/code//hugging_cache"
 
+FAISS_NOISE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db'
+METADATA_STORE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
+
+# This is the actual folder with noise permit data
+# noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/data"
+# This is a subset of the noise permit data, for testing/dev
+noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits//permits_related_to_noise_disturbance/data_sample"
+
 # Main folders
 meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
 meldingen_out_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/processed_data/"
@@ -27,7 +35,7 @@ ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
 API_KEYS = {
     "openai": "OpenAI API KEY",
-    "openai_azure": "OpenAI Azure API KEY"
+    "openai_azure": "d9417c3021824d9a9825c8aa80297624"
 }
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}
