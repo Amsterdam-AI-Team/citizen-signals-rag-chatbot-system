@@ -169,7 +169,17 @@ def process_pdf_folder(pdf_folder_path):
             extracted_data = extract_data(permit_text)
 
             # Step 3: Extract metadata from the LLM response
-            metadata = extract_metadata(extracted_data)
+            try:
+                metadata = extract_metadata(extracted_data)
+            except:
+                metadata = {
+                        "location": "Unkown",
+                        "date_issued":"Unkown",
+                        "permit_time_window":"Unkown",
+                        "permit_type": "Unkown",
+                        "case_number": "Unkown",
+                        }
+
 
             metadata['description'] = permit_text
 
