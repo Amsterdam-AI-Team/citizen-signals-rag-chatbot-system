@@ -70,10 +70,10 @@ class CentralAgent:
         """
         Initialize the tools available to the agent.
         """
-        melding = self.melding_attributes.get('MELDING', '')
-        straatnaam = self.melding_attributes.get('STRAATNAAM', '')
-        huisnummer = self.melding_attributes.get('HUISNUMMER', '')
-        postcode = self.melding_attributes.get('POSTCODE', '')
+        melding = self.melding_attributes['MELDING']
+        straatnaam = self.melding_attributes['STRAATNAAM']
+        huisnummer = self.melding_attributes['HUISNUMMER']
+        postcode = self.melding_attributes['POSTCODE']
         not_allowed_tools = []
 
         os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
@@ -82,8 +82,8 @@ class CentralAgent:
         self.WasteCollectionTool = WasteCollectionTool(straatnaam, huisnummer, postcode)
         self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
         self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
-        if self.melding_attributes.get('LICENSE_PLATE_NEEDED', True):
-            license_plate = self.melding_attributes.get('LICENSE_PLATE', '')
+        if self.melding_attributes['LICENSE_PLATE_NEEDED'] == True:
+            license_plate = self.melding_attributes['LICENSE_PLATE']
             if license_plate:
                 self.LicensePlatePermitTool = LicensePlatePermitTool(license_plate)
             else:
