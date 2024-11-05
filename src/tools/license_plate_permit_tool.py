@@ -56,9 +56,11 @@ class LicensePlatePermitTool:
 
 
 if __name__ == "__main__":
-    # Initialize the retriever
-    retriever = LicensePlatePermitTool()
 
+    license_plate = "DC-743-SK"
+
+    # Initialize the retriever
+    retriever = LicensePlatePermitTool(license_plate = license_plate)
     # Test case: Check if permits were loaded
     if retriever.permits:
         print("Permits loaded successfully.")
@@ -67,5 +69,5 @@ if __name__ == "__main__":
 
     # Test case: Check if a license plate has a permit
     license_plate_with_permit = "DC-743-SK"  # Replace with an actual permit for testing
-    print(retriever.has_permit(license_plate_with_permit))
+    print(retriever.has_permit())
     
