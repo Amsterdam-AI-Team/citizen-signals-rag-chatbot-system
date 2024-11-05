@@ -60,7 +60,12 @@ This will start the chatbot on your localhost, allowing you to interact with it 
 
 ### Running via Azure ML
 
-If you wish to run this code via Azure ML services, you should open repository and run app.py in VS Desktop mode. This will ensure the localhost application works properly.
+If you wish to run this code via Azure ML services, you should open the repository and run app.py in VS Desktop mode. This will ensure the localhost application works properly. 
+Furthermore, you navigate to the blobfuse folder and mount to the storage container using:
+
+```bash
+sh blobfuse_meldingen.sh
+```
 
 ### Notes
 

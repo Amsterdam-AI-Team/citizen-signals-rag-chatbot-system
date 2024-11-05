@@ -2,7 +2,6 @@ import json
 import re
 import logging
 import os
-import requests
 
 from openai import OpenAI, AzureOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -61,7 +60,8 @@ def select_prompt_template(attribute):
     """
     templates = {
         'TYPE': cfg.MELDING_TYPE_TEMPLATE,
-        'ADDRESS': cfg.MELDING_ADDRESS_TEMPLATE
+        'ADDRESS': cfg.MELDING_ADDRESS_TEMPLATE,
+        'LICENSE_PLATE': cfg.LICENSE_PLATE_TEMPLATE
     }
     return ChatPromptTemplate.from_template(templates.get(attribute))
 
@@ -95,7 +95,8 @@ def generate_image_caption(base64_image):
                     "content": [
                         {
                             "type": "text",
-                            "text": "Wat staat er op deze afbeelding?"
+                            "text": "Wat staat er op deze afbeelding? \
+                                Als er een duidelijk kenteken zichtbaar is, geef deze ook terug in je output."
                         },
                         {
                             "type": "image_url",

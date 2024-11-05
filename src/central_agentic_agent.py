@@ -7,6 +7,7 @@ import config as cfg
 from tools.bgt_features_tool import BGTTool
 from tools.waste_collection_tool import WasteCollectionTool
 from tools.policy_retriever_tool import PolicyRetrieverTool
+from tools.license_plate_permit_tool import LicensePlatePermitTool
 from tools.meldingen_tool import MeldingenRetrieverTool
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
@@ -73,6 +74,7 @@ class CentralAgent:
         straatnaam = self.melding_attributes['STRAATNAAM']
         huisnummer = self.melding_attributes['HUISNUMMER']
         postcode = self.melding_attributes['POSTCODE']
+        not_allowed_tools = []
 
         os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
         os.environ["HF_HOME"] = cfg.HUGGING_CACHE
@@ -80,6 +82,15 @@ class CentralAgent:
         self.WasteCollectionTool = WasteCollectionTool(straatnaam, huisnummer, postcode)
         self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
         self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
+        if self.melding_attributes['LICENSE_PLATE_NEEDED'] == True:
+            license_plate = self.melding_attributes['LICENSE_PLATE']
+            if license_plate:
+                self.LicensePlatePermitTool = LicensePlatePermitTool(license_plate)
+            else:
+                not_allowed_tools.append('GetLicensePlatePermitInfo')
+                logging.warning("LICENSE_PLATE_NEEDED is True but LICENSE_PLATE is missing.")
+        else:
+            not_allowed_tools.append('GetLicensePlatePermitInfo')
 
         self.MeldingenRetrieverTool = MeldingenRetrieverTool(
             cfg.embedding_model_name, cfg.meldingen_dump, cfg.index_storage_folder)
@@ -105,7 +116,7 @@ class CentralAgent:
                 name="GetPolicyInfo",
                 func=partial(self.get_policy_info),
                 description=(
-                    "Use this tool to obtain policy information from the municipality website that is related to the melding. "
+                    "Use this tool to obtain policy information from the municipality website that is related to the melding "
                     "in the format 'MELDING'. Returns 'No information found' if unsuccessful."
                 ),
             ),
@@ -126,7 +137,18 @@ class CentralAgent:
                     "to understand how similar cases from different locations were previously solved"
                 ),
             ),
+            Tool(
+                name="GetLicensePlatePermitInfo",
+                func=partial(self.get_license_plate_info),
+                description=(
+                    "Use this tool to find out whether a permit is linked to a license plate, for example when a car is parked on the pavement "
+                    "in the format 'LICENSE_PLATE'. Returns 'No information found' if unsuccessful."
+                ),
+            ),
         ]
+
+        # Remove non-allowed tools
+        tools = [tool for tool in tools if tool.name not in not_allowed_tools]
         return tools
 
     def initialize_agent_executor(self):
@@ -135,7 +157,11 @@ class CentralAgent:
         """
         prompt = self.create_custom_prompt()
         llm_chain = LLMChain(llm=self.llm, prompt=prompt)
-        agent = ZeroShotAgent(llm_chain=llm_chain, tools=self.tools, allowed_tools=[tool.name for tool in self.tools])
+
+        # Initialize the agent with only the allowed tools
+        agent = ZeroShotAgent(llm_chain=llm_chain, tools=self.tools)
+
+        # Initialize the agent executor with the allowed tools
         agent_executor = AgentExecutor.from_agent_and_tools(
             agent=agent,
             tools=self.tools,
@@ -244,13 +270,13 @@ class CentralAgent:
         
     def get_policy_info(self, melding: str) -> str:
         """
-        Retrieve BGT (Basisregistratie Grootschalige Topografie) information based on the provided address.
+        Retrieve policy information from the website based on the provided melding.
 
         Args:
-            address (str): The address in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'.
+            melding (str): The melding done by the melder.
 
         Returns:
-            str: BGT information or 'No information found' if unsuccessful.
+            str: Policy information or 'No information found' if unsuccessful.
         """
         logging.info(f"Retrieving policy info for melding: {melding}")
         try:
@@ -259,7 +285,27 @@ class CentralAgent:
                 return "No information found"
             return policy_info
         except Exception as e:
-            logging.error(f"Failed to get waste collection info: {e}")
+            logging.error(f"Failed to get policy info: {e}")
+            return "No information found"
+
+    def get_license_plate_info(self, license_plate: str) -> str:
+        """
+        Retrieve permit information based on the provided license plate.
+
+        Args:
+            license_plate (str): The license plate number.
+
+        Returns:
+            str: License plate permit information or 'No information found' if unsuccessful.
+        """
+        logging.info(f"Retrieving permit info for license plate: {license_plate}")
+        try:
+            license_plate_info = self.LicensePlatePermitTool.has_permit()
+            if not license_plate_info:
+                return "No information found"
+            return license_plate_info
+        except Exception as e:
+            logging.error(f"Failed to get license plate permit info: {e}")
             return "No information found"
 
     def get_duplicate_meldingen(self, melding: str) -> list[str]:
@@ -316,10 +362,20 @@ class CentralAgent:
 # Example usage:
 if __name__ == "__main__":
     melding_attributes = {
-        "MELDING": "Er ligt grofvuil naast een container bij mij in de straat.",
+        # Example melding 1
+        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
         "STRAATNAAM": "Keizersgracht",
         "HUISNUMMER": "75",
-        "POSTCODE": "1015CE"
+        "POSTCODE": "1015CE",
+        "LICENSE_PLATE_NEEDED": False,
+
+        # Example melding 2
+    #     "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
+    #     "STRAATNAAM": "Keizersgracht",
+    #     "HUISNUMMER": "75",
+    #     "POSTCODE": "1015CE",
+    #     "LICENSE_PLATE_NEEDED": True,
+    #     "LICENSE_PLATE": "DC-743-SK"
     }
 
     agent = CentralAgent(
