@@ -7,6 +7,14 @@ ATTRIBUTES_FILE = "attributes.json"
 
 HUGGING_CACHE = "/home/azureuser/cloudfiles/code//hugging_cache"
 
+FAISS_NOISE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db'
+METADATA_STORE_FILE = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
+
+# This is the actual folder with noise permit data
+noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/data"
+# This is a subset of the noise permit data, for testing/dev
+# noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits//permits_related_to_noise_disturbance/data_sample"
+
 # Main folders
 meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
 meldingen_out_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/processed_data/"

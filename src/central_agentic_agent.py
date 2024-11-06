@@ -9,6 +9,7 @@ from tools.waste_collection_tool import WasteCollectionTool
 from tools.policy_retriever_tool import PolicyRetrieverTool
 from tools.license_plate_permit_tool import LicensePlatePermitTool
 from tools.meldingen_tool import MeldingenRetrieverTool
+from tools.noise_permits_tool import NoisePermitsTool
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
@@ -81,6 +82,7 @@ class CentralAgent:
 
         self.WasteCollectionTool = WasteCollectionTool(straatnaam, huisnummer, postcode)
         self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
+        self.NoisePermitsTool = NoisePermitsTool(straatnaam, huisnummer, postcode, melding)
         self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
         if self.melding_attributes['LICENSE_PLATE_NEEDED'] == True:
             license_plate = self.melding_attributes['LICENSE_PLATE']
@@ -145,6 +147,14 @@ class CentralAgent:
                     "in the format 'LICENSE_PLATE'. Returns 'No information found' if unsuccessful."
                 ),
             ),
+            
+            Tool(
+                name="HandleNoiseComplaint",
+                func=partial(self.get_noise_permit),
+                description=("Use this tool find permits that can indicate that the noise from a complaint"
+                            "might be due to permitted noise."
+                ),
+            )
         ]
 
         # Remove non-allowed tools
@@ -357,6 +367,31 @@ class CentralAgent:
             logging.error(f"Failed to retrieve relevant info: {e}")
             return "No information found"
 
+    def get_noise_permit(self, melding: str) -> list[str]:
+        """
+        Retrieve noise permit.
+
+        Args:
+            melding (str): The melding.
+            address (str): The address in the format 'STRAATNAAM HUISNUMMER, POSTCODE'.
+
+        Returns:
+            [str]: the permit text and some metadata distilled from the permit text
+        """
+
+        logging.info(f"Retrieving noise permit of: {melding}")
+
+        logging.info(f"Retrieving policy info for melding: {melding}")
+
+        try:
+            permit_text = self.NoisePermitsTool.handle_melding(melding)
+            if not permit_text:
+                return "No information found"
+            return permit_text
+        except Exception as e:
+            logging.error(f"Failed to get noise permit: {e}")
+            return "No information found"
+
 
 
 # Example usage:
@@ -376,6 +411,16 @@ if __name__ == "__main__":
     #     "POSTCODE": "1015CE",
     #     "LICENSE_PLATE_NEEDED": True,
     #     "LICENSE_PLATE": "DC-743-SK"
+    
+
+    # Example melding 3 (noise)
+        "MELDING": "Er is erg veel lawaai bij station zuid.",
+        "STRAATNAAM": "Zuidplein",
+        "HUISNUMMER": "1077XV",
+        "POSTCODE": "1015CE",
+        "LICENSE_PLATE_NEEDED": False,
+    
+    
     }
 
     agent = CentralAgent(
