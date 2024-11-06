@@ -1,24 +1,29 @@
+# Base path
+BASE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen'
+
 # Constants
-CHROMA_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/amsterdam.nl/20241007_dump/chroma'
-DOCUMENTS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
-PERMITS_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_license_plates/'
+CHROMA_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/chroma'
+DOCUMENTS_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
+PERMITS_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_license_plates/'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
-HUGGING_CACHE = "/home/azureuser/cloudfiles/code//hugging_cache"
+HUGGING_CACHE = f"{BASE_PATH}/../hugging_cache"
 
-FAISS_NOISE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db'
-METADATA_STORE_FILE = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
+FAISS_NOISE_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db'
+METADATA_STORE_FILE = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
+
+MELDING_HANDLING_GUIDELINES_PATH = f'{BASE_PATH}/raw_data/melding_handling_guidelines/'
+MELDING_HANDLING_GUIDELINES_FILE = 'melding_handling_guidelines.txt'
 
 # This is the actual folder with noise permit data
-noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/data"
+noise_permits_folder = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/data'
 # This is a subset of the noise permit data, for testing/dev
-# noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits//permits_related_to_noise_disturbance/data_sample"
+# noise_permits_folder = f'{BASE_PATH}/raw_data/permits//permits_related_to_noise_disturbance/data_sample'
 
 # Main folders
-meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
-meldingen_out_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/processed_data/"
-amsterdam_nl_scrapped_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/amsterdam_nl_scraper/amsterdam_nl_data/html/scraped/"
+meldingen_in_folder = f'{BASE_PATH}/raw_data'
+meldingen_out_folder = f'{BASE_PATH}/processed_data/'
 
 source = "20240821_meldingen_results_prod"
 meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
@@ -69,12 +74,9 @@ Houd de reactie kort en bondig, zonder aan- of afkondiging, en vermijd het noeme
 MELDING_TYPE_TEMPLATE = """
 Melding: {melding}
 
-1. Analyseer de melding: 
-Bepaal of de melding duidelijk aangeeft wat het probleem is, en of deze concreet genoeg is om door de verantwoordelijke werknemers opgepakt te worden.
-- Is het probleem specifiek en gedetailleerd omschreven?
-
-2. Onderwerp toewijzen:
-Als de melding voldoet aan bovenstaande criteria, wijs een specifiek onderwerp toe dat het probleem beschrijft. Kies een onderwerp dat relevant is voor gemeentelijke diensten, zoals:
+Bepaal of de melding duidelijk aangeeft wat het probleem is, en of deze concreet genoeg is om door de verantwoordelijke werknemers opgepakt te worden. 
+Losse woorden of alleen steekwoorden zijn bijvoorbeeld onvoldoende concreet.
+Als het voldoende concreet is, wijs een specifiek onderwerp toe dat het probleem beschrijft. Kies een onderwerp dat relevant is voor gemeentelijke diensten, zoals:
 - Vuilnis en afval
 - Openbare ruimte (zoals parken, trottoirs, straatmeubilair)
 - Verkeer en parkeren
@@ -82,8 +84,7 @@ Als de melding voldoet aan bovenstaande criteria, wijs een specifiek onderwerp t
 - Overlast (geluid, bouw, enz.)
 - Water en riolering
 
-3. Outputformaat:
-Als een onderwerp kan worden toegewezen, geef dan het type van de melding als een JSON-object in de volgende structuur:
+Geef het type van de melding als een JSON-object in de volgende structuur:
 TYPE: type
 
 Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en value terug.
@@ -133,17 +134,21 @@ Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en va
 
 AGENTIC_AI_AGENT_PROMPT_PREFIX = """
 You are an AI assistant tasked with resolving the following melding (incident report) from a citizen:
-"{melding}"
+{melding}
 
 The chat history is:
-"{chat_history}"
+{chat_history}
+
+The current date and time is:
+{date_time}
 
 Your goal is to create a plan to retrieve and format information that could be shared with the melder (citizen), such that the melding does not need to be escalated into the melding system.
 
-If you find useful information using the tools, provide that information in your Final Answer.
+General Policies to Follow:
+{melding_handling_guidelines}
 
-If you cannot find any useful information, respond with:
-"No useful information was found. Your melding will be escalated in the system."
+If you find useful information using the tools, provide that information in your Final Answer (in the language of the melding) while adhering to the above policies.
+If you cannot find any useful information, respond with: "No useful information was found. Your melding will be escalated in the system." (in the language of the melding).
 """
 
 AGENTIC_AI_AGENT_PROMPT_FORMAT_INSTRUCTIONS = """
@@ -164,32 +169,6 @@ Begin!
 
 Question: {melding}
 Thought: {agent_scratchpad}
-"""
-
-RESTAFVAL_COLLECTION_INFO_RAG_TEMPLATE = """
---------------------
-AFVALWIJZER INFORMATIE:
-{waste_info}
-
---------------------
-MELDING:
-{melding}
-
---------------------
-TYPE AFVAL:
-{subtype}
-
---------------------
-HUIDIGE DATUM EN TIJD:
-{date_time}
-
---------------------
-
-INSTRUCTIES:
-Controleer of de AFVALWIJZER INFORMATIE relevante details bevat met betrekking tot het TYPE AFVAL die kunnen helpen bij het oplossen van de MELDING.
-Het is belangrijk dat de melder van het probleem niet als veroorzaker van het probleem wordt gezien.
-Zorg dat het bericht een geschikte toon heeft, rekening houdend met de MELDING. 
-Geef ALLEEN de informatie terug die voorkomt uit het stappenplan omdat het onderdeel is van een lopend gesprek.
 """
 
 SUMMARIZE_MELDING_TEMPLATE = """
@@ -217,4 +196,23 @@ Kijk of er informatie in de DOCUMENTEN staat die van pas kan komen bij het oplos
 Dat zou bijvoorbeeld algemene informatie of beleid over het onderwerp kunnen zijn.
 Houd je antwoorden gegrond in de inhoud in de DOCUMENTEN.
 Je mag ook eventuele links meegegeven die leiden naar de webpagina waar het antwoord te vinden is.
+"""
+
+MELDING_HANDLING_GUIDELINES = """
+Garbage Collection
+- If the report concerns garbage beside a container or an overflowing container, and the GetWasteCollectionInfo and GetDateTime tools confirm that \
+    collection is scheduled for the same day, inform the reporter that the garbage is likely to be collected later that day.
+
+Check for Duplicate Reports
+- Always use the GetDuplicateMeldingen tool to identify duplicate reports. If duplicates are found, let the reporter know that the issue has already been \
+    noted and is being addressed. If no relevant information is found or the issue cannot be resolved with the available tools, respond with: "No useful \
+        information was found. Your report will be escalated in the system."
+
+Non-Municipal Areas
+- If the GetBGTInfo tool indicates that the "bgt functie" of the address is not classified as a "pand" (building), inform the reporter that the issue \
+    is outside the municipality's jurisdiction and should be reported to the appropriate party.
+
+Policy-Specific Responses
+- If the GetPolicyInfo tool highlights relevant policy regarding the issue, inform the reporter accordingly. For instance, if the report concerns \
+    a shrub partially obstructing the pavement, let them know that municipal intervention will only occur if the obstruction poses a safety hazard, as per policy.
 """
