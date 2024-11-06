@@ -14,11 +14,11 @@ from helpers.embedding_helpers import OpenAIEmbeddingFunction
 
 # Initialize FAISS index filepath
 FAISS_INDEX_PATH = cfg.FAISS_NOISE_PATH 
-METADATA_STORE_PATH = cfg.METADATA_STORE_PATH
+METADATA_STORE_FILE = cfg.METADATA_STORE_FILE
 
 # Load existing metadata or initialize an empty store
 try:
-    with open(METADATA_STORE_PATH, 'r') as f:
+    with open(METADATA_STORE_FILE, 'r') as f:
         metadata_store = json.load(f)
     print("Loaded metadata from disk.")
 except:
@@ -151,7 +151,7 @@ def store_in_faiss(permit_text, metadata):
 
     # Save the updated index and metadata to disk
     faiss.write_index(index, FAISS_INDEX_PATH)
-    with open(METADATA_STORE_PATH, 'w') as f:
+    with open(METADATA_STORE_FILE, 'w') as f:
         json.dump(metadata_store, f)
     # print(f"FAISS index and metadata saved to disk.")
 

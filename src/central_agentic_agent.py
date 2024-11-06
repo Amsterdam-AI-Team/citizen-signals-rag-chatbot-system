@@ -398,7 +398,7 @@ class CentralAgent:
 if __name__ == "__main__":
     melding_attributes = {
         # Example melding 1
-        "MELDING": "Er is erg veel lawaai bij station zuid.",
+        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
         "STRAATNAAM": "Keizersgracht",
         "HUISNUMMER": "75",
         "POSTCODE": "1015CE",
@@ -411,6 +411,16 @@ if __name__ == "__main__":
     #     "POSTCODE": "1015CE",
     #     "LICENSE_PLATE_NEEDED": True,
     #     "LICENSE_PLATE": "DC-743-SK"
+    
+
+    # Example melding 3 (noise)
+        "MELDING": "Er is erg veel lawaai bij station zuid.",
+        "STRAATNAAM": "Zuidplein",
+        "HUISNUMMER": "1077XV",
+        "POSTCODE": "1015CE",
+        "LICENSE_PLATE_NEEDED": False,
+    
+    
     }
 
     agent = CentralAgent(

@@ -1,3 +1,5 @@
+import sys
+sys.path.append("..")
 import numpy as np
 import faiss
 import json
@@ -16,7 +18,7 @@ class NoisePermitsTool:
 
         # Load FAISS index and metadata store for noise permits
         self.index = faiss.read_index(cfg.FAISS_NOISE_PATH)
-        with open(cfg.METADATA_STORE_PATH, 'r') as f:
+        with open(cfg.METADATA_STORE_FILE, 'r') as f:
             self.metadata_store = json.load(f)
         
         # Initialize the embedding function
@@ -27,7 +29,6 @@ class NoisePermitsTool:
         Handles a noise melding by searching for similar permits in the FAISS index.
         Based on id of the retrieved index it retreives the actual permit data from the metadata_store json.
         """
-        melding = self.melding
         # Embed the melding
         query_embedding = self.embedder.embed_query(melding)
         query_embedding_array = np.array(query_embedding).reshape(1, -1).astype('float32')
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     melding_text = "Er is veel bouwlawaai rondom station zuid."
 
     # Initialize the tool with sample address details
-    noise_permit_tool = NoisePermitsTool(straatnaam, huisnummer, postcode)
+    noise_permit_tool = NoisePermitsTool(straatnaam, huisnummer, postcode, melding_text)
 
     # Handle the melding and print the result
     result = noise_permit_tool.handle_melding(melding_text)
