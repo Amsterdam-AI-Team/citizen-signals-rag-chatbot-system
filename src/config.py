@@ -11,9 +11,9 @@ FAISS_NOISE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/
 METADATA_STORE_FILE = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
 
 # This is the actual folder with noise permit data
-noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/data"
+# noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/data"
 # This is a subset of the noise permit data, for testing/dev
-# noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits//permits_related_to_noise_disturbance/data_sample"
+noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits//permits_related_to_noise_disturbance/data_sample"
 
 # Main folders
 meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
@@ -25,6 +25,8 @@ meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
 
 index_storage_folder = f"{meldingen_out_folder}/indices"
 
+track_emissions = True # Set to True to track emissions to 
+
 embedding_model_name = "intfloat/multilingual-e5-large"
 # embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
 # embeddng_model_name = "NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers"
@@ -35,7 +37,8 @@ ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
 API_KEYS = {
     "openai": "OpenAI API KEY",
-    "openai_azure": "OpenAI Azure API KEY"
+    "openai_azure": "d9417c3021824d9a9825c8aa80297624"
+    # "openai_azure": "OpenAI Azure API KEY"
 }
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}

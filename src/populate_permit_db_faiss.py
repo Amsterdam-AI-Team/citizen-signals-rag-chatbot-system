@@ -11,10 +11,14 @@ import numpy as np
 from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
 import json
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
+from codecarbon import EmissionsTracker, track_emissions
 
 # Initialize FAISS index filepath
 FAISS_INDEX_PATH = cfg.FAISS_NOISE_PATH 
 METADATA_STORE_FILE = cfg.METADATA_STORE_FILE
+
+# FAISS_INDEX_PATH = os.path.join(os.getcwd(), "faiss/faiss_index_test")
+# METADATA_STORE_FILE =os.path.join(os.getcwd(), "faiss/noise_permits_faiss_metadata.json")
 
 # Load existing metadata or initialize an empty store
 try:
@@ -99,7 +103,7 @@ def process_location_metadata(location):
         result_list = ast.literal_eval(result)
         result_dict = dict(zip(['Straatnaam', 'Huisnummer', 'Postcode', 'Stad'], result_list))
     else:
-        result_dict = "Geen match"
+        result_dict = {k:'Onbekend' for k in ['Straatnaam', 'Huisnummer', 'Postcode', 'Stad']}
 
     if result_dict and result_dict['Postcode'] != 'Onbekend':
         params = {'postcode': result_dict['Postcode']}
@@ -130,6 +134,7 @@ def load_or_initialize_faiss_index(dimension):
         index = faiss.IndexFlatL2(dimension)
         print("Initialized a new FAISS index.")
     return index
+
 # Step 6: Populate FAISS with the processed PDF data and metadata
 def store_in_faiss(permit_text, metadata):
     embedder = OpenAIEmbeddingFunction()
@@ -153,7 +158,7 @@ def store_in_faiss(permit_text, metadata):
     faiss.write_index(index, FAISS_INDEX_PATH)
     with open(METADATA_STORE_FILE, 'w') as f:
         json.dump(metadata_store, f)
-    # print(f"FAISS index and metadata saved to disk.")
+    print(f"FAISS index and metadata saved to disk.")
 
 
 # Step 7: Main function to process a folder of PDFs
@@ -194,4 +199,12 @@ def process_pdf_folder(pdf_folder_path):
 
 # Example usage: Process a folder of PDFs
 pdf_folder_path = cfg.noise_permits_folder
-process_pdf_folder(pdf_folder_path)
+
+# Dependent on what we specify in .config we either want to run codecarbon or not
+if cfg.track_emissions:
+    tracker = EmissionsTracker(experiment_id = "oneoff_populate_permit_db_faiss")
+    tracker.start()
+    process_pdf_folder(pdf_folder_path)
+    tracker.stop()
+else:
+    process_pdf_folder(pdf_folder_path)

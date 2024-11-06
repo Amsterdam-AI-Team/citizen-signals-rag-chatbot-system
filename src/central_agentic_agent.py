@@ -14,6 +14,7 @@ from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
 from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
+from codecarbon import EmissionsTracker
 
 class CentralAgent:
     """
@@ -160,7 +161,7 @@ class CentralAgent:
         # Remove non-allowed tools
         tools = [tool for tool in tools if tool.name not in not_allowed_tools]
         return tools
-
+    
     def initialize_agent_executor(self):
         """
         Initialize the agent executor with the specified tools and LLM.
@@ -393,9 +394,13 @@ class CentralAgent:
             return "No information found"
 
 
-
 # Example usage:
 if __name__ == "__main__":
+
+    if cfg.track_emissions:
+        tracker = EmissionsTracker(experiment_name = "inference_central_agentic_agent")
+        tracker.start()
+
     melding_attributes = {
         # Example melding 1
         "MELDING": "Er ligt afval naast een container bij mij in de straat.",
@@ -416,8 +421,8 @@ if __name__ == "__main__":
     # Example melding 3 (noise)
         "MELDING": "Er is erg veel lawaai bij station zuid.",
         "STRAATNAAM": "Zuidplein",
-        "HUISNUMMER": "1077XV",
-        "POSTCODE": "1015CE",
+        "HUISNUMMER": "12",
+        "POSTCODE": "1077XV",
         "LICENSE_PLATE_NEEDED": False,
     
     
@@ -428,3 +433,6 @@ if __name__ == "__main__":
         melding_attributes=melding_attributes,
     )
     agent.build_and_execute_plan()
+
+    if cfg.track_emissions:
+        tracker.stop()
