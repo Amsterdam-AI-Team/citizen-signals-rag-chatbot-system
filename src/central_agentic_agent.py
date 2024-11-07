@@ -398,16 +398,17 @@ class CentralAgent:
 if __name__ == "__main__":
 
     if cfg.track_emissions:
-        tracker = EmissionsTracker(experiment_name = "inference_central_agentic_agent")
+        tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
+        co2_signal_api_token = cfg.API_KEYS['co2-signal'])
         tracker.start()
 
     melding_attributes = {
-        # Example melding 1
-        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
-        "STRAATNAAM": "Keizersgracht",
-        "HUISNUMMER": "75",
-        "POSTCODE": "1015CE",
-        "LICENSE_PLATE_NEEDED": False,
+        # # Example melding 1
+        # "MELDING": "Er ligt afval naast een container bij mij in de straat.",
+        # "STRAATNAAM": "Keizersgracht",
+        # "HUISNUMMER": "75",
+        # "POSTCODE": "1015CE",
+        # "LICENSE_PLATE_NEEDED": False,
 
         # Example melding 2
     #     "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",

@@ -11,9 +11,9 @@ FAISS_NOISE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/
 METADATA_STORE_FILE = '/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
 
 # This is the actual folder with noise permit data
-# noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/data"
+noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits/permits_related_to_noise_disturbance/data"
 # This is a subset of the noise permit data, for testing/dev
-noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits//permits_related_to_noise_disturbance/data_sample"
+# noise_permits_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data/permits//permits_related_to_noise_disturbance/data_sample"
 
 # Main folders
 meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
@@ -37,8 +37,9 @@ ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
 API_KEYS = {
     "openai": "OpenAI API KEY",
-    "openai_azure": "d9417c3021824d9a9825c8aa80297624"
-    # "openai_azure": "OpenAI Azure API KEY"
+    "openai_azure": "d9417c3021824d9a9825c8aa80297624",
+    # "openai_azure": "OpenAI Azure API KEY",
+    "co2-signal": "gsXRCVrqtsE0L"
 }
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}

@@ -17,9 +17,6 @@ from codecarbon import EmissionsTracker, track_emissions
 FAISS_INDEX_PATH = cfg.FAISS_NOISE_PATH 
 METADATA_STORE_FILE = cfg.METADATA_STORE_FILE
 
-# FAISS_INDEX_PATH = os.path.join(os.getcwd(), "faiss/faiss_index_test")
-# METADATA_STORE_FILE =os.path.join(os.getcwd(), "faiss/noise_permits_faiss_metadata.json")
-
 # Load existing metadata or initialize an empty store
 try:
     with open(METADATA_STORE_FILE, 'r') as f:
