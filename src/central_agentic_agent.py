@@ -177,7 +177,8 @@ class CentralAgent:
             agent=agent,
             tools=self.tools,
             memory=self.memory,
-            verbose=True,
+            verbose=True
+            # handle_parsing_errors=True,
         )
         return agent_executor
 
