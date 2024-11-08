@@ -1,6 +1,7 @@
 import logging
 from functools import partial
 from typing import Optional
+from datetime import datetime
 import os
 
 import config as cfg
@@ -10,6 +11,7 @@ from tools.policy_retriever_tool import PolicyRetrieverTool
 from tools.license_plate_permit_tool import LicensePlatePermitTool
 from tools.meldingen_tool import MeldingenRetrieverTool
 from tools.noise_permits_tool import NoisePermitsTool
+from helpers.melding_helpers import get_formatted_chat_history
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
@@ -36,7 +38,8 @@ class CentralAgent:
         """
         self.melding_attributes = melding_attributes or {}
         self.chat_history = chat_history or []
-        self.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+        self.memory = ConversationBufferMemory(memory_key="chat_history", 
+                                               input_key="melding", return_messages=True)
 
         # Initialize the language model
         self.llm = self.initialize_llm()
@@ -148,7 +151,6 @@ class CentralAgent:
                     "in the format 'LICENSE_PLATE'. Returns 'No information found' if unsuccessful."
                 ),
             ),
-            
             Tool(
                 name="HandleNoiseComplaint",
                 func=partial(self.get_noise_permit),
@@ -202,29 +204,18 @@ class CentralAgent:
         """
         logging.info("Building and executing plan to solve melding...")
 
-        # Prepare the input prompt for the agent
+        # Prepare the input prompt variables for the agent
         melding_text = self.melding_attributes.get('MELDING', '')
+        formatted_chat_history = get_formatted_chat_history(self.chat_history)
+        melding_handling_guidelines = cfg.MELDING_HANDLING_GUIDELINES # This option allows for easy change of guidelines in config file
+        # melding_handling_guidelines = open(os.path.join(cfg.MELDING_HANDLING_GUIDELINES_PATH, # this option for final repository
+        #                                                     cfg.MELDING_HANDLING_GUIDELINES_FILE), 'r').read()
 
-        # Process chat_history to create a string representation
-        chat_history_entries = []
-        for entry in self.chat_history:
-            vraag = entry.get('vraag', '')
-            antwoord = entry.get('antwoord', '')
-
-            # If 'antwoord' is a list, join it into a single string
-            if isinstance(antwoord, list):
-                antwoord = "\n".join(antwoord)
-
-            # Append formatted conversation entry
-            chat_history_entries.append(f"User: {vraag}\nAssistant: {antwoord}")
-
-        # Join all conversation entries into a single string
-        chat_history = "\n".join(chat_history_entries)
-
-        # Prepare inputs for the agent
         inputs = {
             "melding": melding_text,
-            "chat_history": chat_history,
+            "chat_history": formatted_chat_history,
+            "date_time": self.get_date_time(),
+            "melding_handling_guidelines": melding_handling_guidelines
         }
 
         # Run the agent with the input prompt
@@ -395,6 +386,7 @@ class CentralAgent:
             return "No information found"
 
 
+
 # Example usage:
 if __name__ == "__main__":
 
@@ -404,30 +396,29 @@ if __name__ == "__main__":
         tracker.start()
 
     melding_attributes = {
-        # # Example melding 1
-        # "MELDING": "Er ligt afval naast een container bij mij in de straat.",
+
+        # Example melding 1 (garbage)
+        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
+        "STRAATNAAM": "Keizersgracht",
+        "HUISNUMMER": "75",
+        "POSTCODE": "1015CE",
+        "LICENSE_PLATE_NEEDED": False,
+
+        # Example melding 2 (parking)
+        # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
         # "STRAATNAAM": "Keizersgracht",
         # "HUISNUMMER": "75",
         # "POSTCODE": "1015CE",
+        # "LICENSE_PLATE_NEEDED": True,
+        # "LICENSE_PLATE": "DC-743-SK"
+    
+        # Example melding 3 (noise)
+        # "MELDING": "Er is erg veel lawaai bij station zuid.",
+        # "STRAATNAAM": "Zuidplein",
+        # "HUISNUMMER": "136",
+        # "POSTCODE": "1077XV",
         # "LICENSE_PLATE_NEEDED": False,
 
-        # Example melding 2
-    #     "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
-    #     "STRAATNAAM": "Keizersgracht",
-    #     "HUISNUMMER": "75",
-    #     "POSTCODE": "1015CE",
-    #     "LICENSE_PLATE_NEEDED": True,
-    #     "LICENSE_PLATE": "DC-743-SK"
-    
-
-    # Example melding 3 (noise)
-        "MELDING": "Er is erg veel lawaai bij station zuid.",
-        "STRAATNAAM": "Zuidplein",
-        "HUISNUMMER": "12",
-        "POSTCODE": "1077XV",
-        "LICENSE_PLATE_NEEDED": False,
-    
-    
     }
 
     agent = CentralAgent(
