@@ -30,7 +30,7 @@ meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
 
 index_storage_folder = f"{meldingen_out_folder}/indices"
 
-track_emissions = True # Set to True to track emissions to 
+track_emissions = False # Set to True to track emissions to 
 
 embedding_model_name = "intfloat/multilingual-e5-large"
 # embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
@@ -211,5 +211,10 @@ Non-Municipal Areas
 
 Policy-Specific Responses
 - If the GetPolicyInfo tool highlights relevant policy regarding the issue, inform the reporter accordingly. For instance, if the report concerns \
-    a shrub partially obstructing the pavement, let them know that municipal intervention will only occur if the obstruction poses a safety hazard, as per policy.
+    a shrub partially obstructing the pavement, let them know that municipal intervention will only occur if the obstruction poses a safety hazard, as per policy. \
+
+Noise Disturbances
+- If the HandleNoiseComplaint tool returns a permit, please return structured information to the reporter about the permit in the format as is returned by the tool. \
+    Feel free to be a bit verbose, and please explain why the noise may or may not be permitted, \
+        and if anything about objection to the permit is mentioned, please return this as well. \
 """

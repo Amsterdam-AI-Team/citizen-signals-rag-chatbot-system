@@ -423,7 +423,7 @@ if __name__ == "__main__":
         # "LICENSE_PLATE": "DC-743-SK"
     
         # Example melding 3 (noise)
-        "MELDING": "Er is erg veel lawaai bij station zuid.",
+        "MELDING": "Er is erg veel lawaai van bouwwerkzaamheden bij station zuid, ook op zondag.",
         "STRAATNAAM": "Zuidplein",
         "HUISNUMMER": "136",
         "POSTCODE": "1077XV",
