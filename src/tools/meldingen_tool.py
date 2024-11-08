@@ -16,6 +16,9 @@ from pyproj import Transformer
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 from shapely.geometry import Point
+from codecarbon import EmissionsTracker
+import config as cfg
+import my_secrets
 
 
 class MeldingenRetrieverTool:

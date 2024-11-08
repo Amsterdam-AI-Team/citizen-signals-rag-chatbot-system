@@ -5,6 +5,10 @@ import faiss
 import json
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
 import config as cfg
+import mysecrets
+
+from codecarbon import EmissionsTracker
+
 
 class NoisePermitsTool:
     """
@@ -43,6 +47,9 @@ class NoisePermitsTool:
             return "No matching permit found."
 
 if __name__ == "__main__":
+    tracker = EmissionsTracker()
+    tracker.start()
+    # GPU Intensive code goes here
     # Sample values for initializing NoisePermitsTool
     straatnaam = "Zuidplein"
     huisnummer = "136"
@@ -57,3 +64,4 @@ if __name__ == "__main__":
     # Handle the melding and print the result
     result = noise_permit_tool.handle_melding(melding_text)
     print(result)
+    tracker.stop()

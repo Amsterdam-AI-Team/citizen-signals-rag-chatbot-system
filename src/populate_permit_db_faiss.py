@@ -5,12 +5,14 @@ import ast
 import requests
 from langchain.prompts import ChatPromptTemplate
 import config as cfg
+import mysecrets
 from pathlib import Path
 import faiss
 import numpy as np
 from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
 import json
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
+from codecarbon import EmissionsTracker, track_emissions
 
 # Initialize FAISS index filepath
 FAISS_INDEX_PATH = cfg.FAISS_NOISE_PATH 
@@ -31,7 +33,7 @@ def extract_text_from_pdf(pdf_path):
         for page in pdf.pages:
             text += page.extract_text()
     return text
-print(cfg.API_KEYS['openai_azure'])
+print(mysecrets.API_KEYS['openai_azure'])
 
 # Step 2: Use an LLM to extract metadata from the permit text
 metadata_prompt = ChatPromptTemplate.from_template("""
@@ -52,7 +54,7 @@ def initialize_llm():
         """
         if cfg.ENDPOINT == 'local':
             llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=cfg.API_KEYS["openai"], 
+                api_key=mysecrets.API_KEYS["openai"], 
                 temperature=0
             )
         elif cfg.ENDPOINT == 'azure':
@@ -60,7 +62,7 @@ def initialize_llm():
                 deployment_name='gpt-4o',
                 model_name='gpt-4o',
                 azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=cfg.API_KEYS["openai_azure"],
+                api_key=mysecrets.API_KEYS["openai_azure"],
                 api_version="2024-02-15-preview",
                 temperature=0,
             )
@@ -99,7 +101,7 @@ def process_location_metadata(location):
         result_list = ast.literal_eval(result)
         result_dict = dict(zip(['Straatnaam', 'Huisnummer', 'Postcode', 'Stad'], result_list))
     else:
-        result_dict = "Geen match"
+        result_dict = {k:'Onbekend' for k in ['Straatnaam', 'Huisnummer', 'Postcode', 'Stad']}
 
     if result_dict and result_dict['Postcode'] != 'Onbekend':
         params = {'postcode': result_dict['Postcode']}
@@ -130,6 +132,7 @@ def load_or_initialize_faiss_index(dimension):
         index = faiss.IndexFlatL2(dimension)
         print("Initialized a new FAISS index.")
     return index
+
 # Step 6: Populate FAISS with the processed PDF data and metadata
 def store_in_faiss(permit_text, metadata):
     embedder = OpenAIEmbeddingFunction()
@@ -153,7 +156,7 @@ def store_in_faiss(permit_text, metadata):
     faiss.write_index(index, FAISS_INDEX_PATH)
     with open(METADATA_STORE_FILE, 'w') as f:
         json.dump(metadata_store, f)
-    # print(f"FAISS index and metadata saved to disk.")
+    print(f"FAISS index and metadata saved to disk.")
 
 
 # Step 7: Main function to process a folder of PDFs
@@ -194,4 +197,12 @@ def process_pdf_folder(pdf_folder_path):
 
 # Example usage: Process a folder of PDFs
 pdf_folder_path = cfg.noise_permits_folder
-process_pdf_folder(pdf_folder_path)
+
+# Dependent on what we specify in .config we either want to run codecarbon or not
+if cfg.track_emissions:
+    tracker = EmissionsTracker(experiment_id = "oneoff_noise_permit_embedding")
+    tracker.start()
+    process_pdf_folder(pdf_folder_path)
+    tracker.stop()
+else:
+    process_pdf_folder(pdf_folder_path)

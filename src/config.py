@@ -30,6 +30,8 @@ meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
 
 index_storage_folder = f"{meldingen_out_folder}/indices"
 
+track_emissions = True # Set to True to track emissions to 
+
 embedding_model_name = "intfloat/multilingual-e5-large"
 # embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
 # embeddng_model_name = "NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers"
@@ -37,11 +39,6 @@ embedding_model_name = "intfloat/multilingual-e5-large"
 ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
 
 ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
-
-API_KEYS = {
-    "openai": "OpenAI API KEY",
-    "openai_azure": "OpenAI Azure API KEY"
-}
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}
 summarize_melding_for_policy_retrieval = False # set to True if you wish to summarize melding for policy retrieval

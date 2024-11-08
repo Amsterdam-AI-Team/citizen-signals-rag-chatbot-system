@@ -6,6 +6,7 @@ import csv
 import re
 
 import config as cfg
+import mysecrets
 
 class LicensePlatePermitTool:
     def __init__(self, license_plate, license_plate_field='license_plate_no'):

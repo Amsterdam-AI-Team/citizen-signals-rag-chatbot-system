@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 
 import config as cfg
+import mysecrets
 from tools.bgt_features_tool import BGTTool
 from tools.waste_collection_tool import WasteCollectionTool
 from tools.policy_retriever_tool import PolicyRetrieverTool
@@ -16,6 +17,7 @@ from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
 from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
+from codecarbon import EmissionsTracker
 
 class CentralAgent:
     """
@@ -55,7 +57,7 @@ class CentralAgent:
         """
         if cfg.ENDPOINT == 'local':
             llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=cfg.API_KEYS["openai"], 
+                api_key=mysecrets.API_KEYS["openai"], 
                 temperature=0
             )
         elif cfg.ENDPOINT == 'azure':
@@ -63,7 +65,7 @@ class CentralAgent:
                 deployment_name='gpt-4o',
                 model_name='gpt-4o',
                 azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=cfg.API_KEYS["openai_azure"],
+                api_key=mysecrets.API_KEYS["openai_azure"],
                 api_version="2024-02-15-preview",
                 temperature=0,
             )
@@ -162,7 +164,7 @@ class CentralAgent:
         # Remove non-allowed tools
         tools = [tool for tool in tools if tool.name not in not_allowed_tools]
         return tools
-
+    
     def initialize_agent_executor(self):
         """
         Initialize the agent executor with the specified tools and LLM.
@@ -178,7 +180,8 @@ class CentralAgent:
             agent=agent,
             tools=self.tools,
             memory=self.memory,
-            verbose=True,
+            verbose=True
+            # handle_parsing_errors=True,
         )
         return agent_executor
 
@@ -396,14 +399,20 @@ class CentralAgent:
 
 # Example usage:
 if __name__ == "__main__":
+
+    if cfg.track_emissions:
+        tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
+        co2_signal_api_token = mysecrets.API_KEYS['co2-signal'])
+        tracker.start()
+
     melding_attributes = {
 
-        # Example melding 1 (garbage)
-        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
-        "STRAATNAAM": "Keizersgracht",
-        "HUISNUMMER": "75",
-        "POSTCODE": "1015CE",
-        "LICENSE_PLATE_NEEDED": False,
+        # # Example melding 1 (garbage)
+        # "MELDING": "Er ligt afval naast een container bij mij in de straat.",
+        # "STRAATNAAM": "Keizersgracht",
+        # "HUISNUMMER": "75",
+        # "POSTCODE": "1015CE",
+        # "LICENSE_PLATE_NEEDED": False,
 
         # Example melding 2 (parking)
         # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
@@ -414,11 +423,11 @@ if __name__ == "__main__":
         # "LICENSE_PLATE": "DC-743-SK"
     
         # Example melding 3 (noise)
-        # "MELDING": "Er is erg veel lawaai bij station zuid.",
-        # "STRAATNAAM": "Zuidplein",
-        # "HUISNUMMER": "136",
-        # "POSTCODE": "1077XV",
-        # "LICENSE_PLATE_NEEDED": False,
+        "MELDING": "Er is erg veel lawaai bij station zuid.",
+        "STRAATNAAM": "Zuidplein",
+        "HUISNUMMER": "136",
+        "POSTCODE": "1077XV",
+        "LICENSE_PLATE_NEEDED": False,
 
     }
 
@@ -427,3 +436,6 @@ if __name__ == "__main__":
         melding_attributes=melding_attributes,
     )
     agent.build_and_execute_plan()
+
+    if cfg.track_emissions:
+        tracker.stop()

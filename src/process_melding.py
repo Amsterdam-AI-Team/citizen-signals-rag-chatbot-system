@@ -12,6 +12,7 @@ from helpers.melding_helpers import (
 )
 
 import config as cfg
+import mysecrets
 
 # Environment setup
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -142,11 +143,11 @@ class MeldingProcessor:
         )
 
         if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=cfg.API_KEYS["openai"])
+            client = OpenAI(api_key=mysecrets.API_KEYS["openai"])
         elif cfg.ENDPOINT == 'azure':
             client = AzureOpenAI(
                 azure_endpoint=cfg.ENDPOINT_AZURE, 
-                api_key=cfg.API_KEYS["openai_azure"],  
+                api_key=mysecrets.API_KEYS["openai_azure"],  
                 api_version="2024-02-15-preview"
             )
 
@@ -195,11 +196,11 @@ class MeldingProcessor:
 
         # Make an LLM call
         if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=cfg.API_KEYS["openai"])
+            client = OpenAI(api_key=mysecrets.API_KEYS["openai"])
         elif cfg.ENDPOINT == 'azure':
             client = AzureOpenAI(
                 azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=cfg.API_KEYS["openai_azure"],
+                api_key=mysecrets.API_KEYS["openai_azure"],
                 api_version="2024-02-15-preview"
             )
 
