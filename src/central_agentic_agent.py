@@ -385,6 +385,15 @@ class CentralAgent:
             logging.error(f"Failed to get noise permit: {e}")
             return "No information found"
 
+    def get_date_time(self) -> str:
+        """
+        Retrieve the current date and time in the specified format.
+        
+        Returns:
+            str: Current date and time in the format "Wednesday 15 October 2024 18:45".
+        """
+        logging.info("Retrieving current date and time")
+        return datetime.now().strftime("%A %d %B %Y %H:%M")
 
 
 # Example usage:
