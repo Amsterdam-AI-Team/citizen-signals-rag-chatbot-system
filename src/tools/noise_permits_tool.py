@@ -5,7 +5,6 @@ import faiss
 import json
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
 import config as cfg
-import mysecrets
 
 from codecarbon import EmissionsTracker
 

@@ -1,12 +1,12 @@
 from openai import AzureOpenAI
 from typing import List
 import config as cfg
-import mysecrets
+import my_secrets
 
 class OpenAIEmbeddingFunction:
     def __init__(self, model: str = "text-embedding-ada-002"):
         client = AzureOpenAI(
-            api_key = mysecrets.API_KEYS['openai_azure'],  
+            api_key = my_secrets.API_KEYS['openai_azure'],  
             api_version = "2024-06-01",
             azure_endpoint =cfg.ENDPOINT_AZURE
         )

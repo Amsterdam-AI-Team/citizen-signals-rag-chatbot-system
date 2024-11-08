@@ -5,7 +5,7 @@ import ast
 import requests
 from langchain.prompts import ChatPromptTemplate
 import config as cfg
-import mysecrets
+import my_secrets
 from pathlib import Path
 import faiss
 import numpy as np
@@ -33,7 +33,6 @@ def extract_text_from_pdf(pdf_path):
         for page in pdf.pages:
             text += page.extract_text()
     return text
-print(mysecrets.API_KEYS['openai_azure'])
 
 # Step 2: Use an LLM to extract metadata from the permit text
 metadata_prompt = ChatPromptTemplate.from_template("""
@@ -54,7 +53,7 @@ def initialize_llm():
         """
         if cfg.ENDPOINT == 'local':
             llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=mysecrets.API_KEYS["openai"], 
+                api_key=my_secrets.API_KEYS["openai"], 
                 temperature=0
             )
         elif cfg.ENDPOINT == 'azure':
@@ -62,7 +61,7 @@ def initialize_llm():
                 deployment_name='gpt-4o',
                 model_name='gpt-4o',
                 azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=mysecrets.API_KEYS["openai_azure"],
+                api_key=my_secrets.API_KEYS["openai_azure"],
                 api_version="2024-02-15-preview",
                 temperature=0,
             )
