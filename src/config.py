@@ -217,4 +217,9 @@ Noise Disturbances
 - If the HandleNoiseComplaint tool returns a permit, please return structured information to the reporter about the permit in the format as is returned by the tool. \
     Feel free to be a bit verbose, and please explain why the noise may or may not be permitted, \
         and if anything about objection to the permit is mentioned, please return this as well. \
+
+License Plate Permits
+- If the GetLicensePlatePermitInfo returns that a car has a permit, it is allowed to park on the pavement/sidewalk \
+    If, in that case, the report is about a car that is parked on the pavement/sidewalk, please notify the reporter that this specific car is permitted to do this.\
+        Do notify them that this is only the case for shorter periods (of up to a couple of hours) and not for (for example) multiple days.
 """

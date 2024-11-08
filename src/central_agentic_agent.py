@@ -148,8 +148,10 @@ class CentralAgent:
                 name="GetLicensePlatePermitInfo",
                 func=partial(self.get_license_plate_info),
                 description=(
-                    "Use this tool to find out whether a permit is linked to a license plate, for example when a car is parked on the pavement "
-                    "in the format 'LICENSE_PLATE'. Returns 'No information found' if unsuccessful."
+                    "If the report is about a wrongly parked car, always use this tool to find out whether a permit is"
+                    "linked to the license plate (in the format 'LICENSE_PLATE') of that car."
+                    "For example w that could a when a car is parked on the pavement "
+                    " Returns 'No information found' if unsuccessful."
                 ),
             ),
             Tool(
