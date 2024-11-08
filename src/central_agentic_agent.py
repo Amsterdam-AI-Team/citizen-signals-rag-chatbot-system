@@ -115,8 +115,9 @@ class CentralAgent:
                 name="GetBGTInfo",
                 func=partial(self.get_bgt_info),
                 description=(
-                    "Use this tool to get the BGT function of a given address "
-                    "in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'. Returns 'No information found' if unsuccessful."
+                    "Use this tool to get the BGT function of a given address, in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'."
+                    "The BGT function can indicate the jurisdiction of issues concerning that address."
+                    "Returns 'No information found' if unsuccessful."
                 ),
             ),
             Tool(
@@ -148,15 +149,17 @@ class CentralAgent:
                 name="GetLicensePlatePermitInfo",
                 func=partial(self.get_license_plate_info),
                 description=(
-                    "Use this tool to find out whether a permit is linked to a license plate, for example when a car is parked on the pavement "
-                    "in the format 'LICENSE_PLATE'. Returns 'No information found' if unsuccessful."
+                    "Use this tool to find out whether a parking permit is linked to a license plate, in the format 'LICENSE_PLATE'."
+                    "for example useful when a car is parked on the pavement "
+                    "Returns 'No information found' if unsuccessful."
                 ),
             ),
             Tool(
                 name="HandleNoiseComplaint",
                 func=partial(self.get_noise_permit),
-                description=("Use this tool find permits that can indicate that the noise from a complaint"
-                            "might be due to permitted noise."
+                description=("Use this tool find permits that permit noise in a certain area for a certain period."
+                            "A permit can indicate that the noise from a complaint might be due to permitted noise."
+                            "Returns 'No matching permit found.' if unsuccessful."
                 ),
             )
         ]

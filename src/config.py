@@ -30,7 +30,7 @@ meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
 
 index_storage_folder = f"{meldingen_out_folder}/indices"
 
-track_emissions = True # Set to True to track emissions to 
+track_emissions = False # Set to True to track emissions to 
 
 embedding_model_name = "intfloat/multilingual-e5-large"
 # embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
