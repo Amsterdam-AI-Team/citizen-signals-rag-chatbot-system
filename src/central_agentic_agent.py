@@ -397,12 +397,12 @@ if __name__ == "__main__":
 
     melding_attributes = {
 
-        # Example melding 1 (garbage)
-        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
-        "STRAATNAAM": "Keizersgracht",
-        "HUISNUMMER": "75",
-        "POSTCODE": "1015CE",
-        "LICENSE_PLATE_NEEDED": False,
+        # # Example melding 1 (garbage)
+        # "MELDING": "Er ligt afval naast een container bij mij in de straat.",
+        # "STRAATNAAM": "Keizersgracht",
+        # "HUISNUMMER": "75",
+        # "POSTCODE": "1015CE",
+        # "LICENSE_PLATE_NEEDED": False,
 
         # Example melding 2 (parking)
         # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
@@ -413,11 +413,11 @@ if __name__ == "__main__":
         # "LICENSE_PLATE": "DC-743-SK"
     
         # Example melding 3 (noise)
-        # "MELDING": "Er is erg veel lawaai bij station zuid.",
-        # "STRAATNAAM": "Zuidplein",
-        # "HUISNUMMER": "136",
-        # "POSTCODE": "1077XV",
-        # "LICENSE_PLATE_NEEDED": False,
+        "MELDING": "Er is erg veel lawaai bij station zuid.",
+        "STRAATNAAM": "Zuidplein",
+        "HUISNUMMER": "136",
+        "POSTCODE": "1077XV",
+        "LICENSE_PLATE_NEEDED": False,
 
     }
 

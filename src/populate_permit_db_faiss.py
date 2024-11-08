@@ -199,7 +199,7 @@ pdf_folder_path = cfg.noise_permits_folder
 
 # Dependent on what we specify in .config we either want to run codecarbon or not
 if cfg.track_emissions:
-    tracker = EmissionsTracker(experiment_id = "oneoff_populate_permit_db_faiss")
+    tracker = EmissionsTracker(experiment_id = "oneoff_noise_permit_embedding")
     tracker.start()
     process_pdf_folder(pdf_folder_path)
     tracker.stop()

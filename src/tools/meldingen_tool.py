@@ -86,6 +86,10 @@ class MeldingenRetrieverTool:
                 self.documents = dump["documents"]
                 self.corpus_embeddings = dump["embeddings"]
         else:
+            if cfg.track_emissions:
+                tracker = EmissionsTracker(experiment_id = "oneoff_meldingen_embedding",
+                co2_signal_api_token = cfg.API_KEYS['co2-signal'])
+                tracker.start()
             logging.info(f"Embedding documents using {self.model_name}...")
             # self._set_documents()
             documents = self.meldingen_data["text"].values
@@ -96,6 +100,8 @@ class MeldingenRetrieverTool:
                 pickle.dump(
                     {"documents": documents, "embeddings": self.corpus_embeddings}, persist_file
                 )
+            if cfg.track_emissions:
+                tracker.stop()
 
     def filter_meldingen_embeddings(self, address):
         """Filter meldingen around a certain address"""
