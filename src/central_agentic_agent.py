@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 import config as cfg
-import mysecrets
+import my_secrets
 from tools.bgt_features_tool import BGTTool
 from tools.waste_collection_tool import WasteCollectionTool
 from tools.policy_retriever_tool import PolicyRetrieverTool
@@ -57,7 +57,7 @@ class CentralAgent:
         """
         if cfg.ENDPOINT == 'local':
             llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=mysecrets.API_KEYS["openai"], 
+                api_key=my_secrets.API_KEYS["openai"], 
                 temperature=0
             )
         elif cfg.ENDPOINT == 'azure':
@@ -65,7 +65,7 @@ class CentralAgent:
                 deployment_name='gpt-4o',
                 model_name='gpt-4o',
                 azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=mysecrets.API_KEYS["openai_azure"],
+                api_key=my_secrets.API_KEYS["openai_azure"],
                 api_version="2024-02-15-preview",
                 temperature=0,
             )
@@ -402,7 +402,7 @@ if __name__ == "__main__":
 
     if cfg.track_emissions:
         tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
-        co2_signal_api_token = mysecrets.API_KEYS['co2-signal'])
+        co2_signal_api_token = my_secrets.API_KEYS['co2-signal'])
         tracker.start()
 
     melding_attributes = {

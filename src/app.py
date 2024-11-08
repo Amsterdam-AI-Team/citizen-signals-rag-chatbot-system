@@ -8,7 +8,7 @@ from flask import Flask, render_template, request, jsonify, Response, stream_wit
 from openai import OpenAI
 
 import config as cfg
-import mysecrets
+import my_secrets
 from process_melding import  MeldingProcessor
 from helpers.melding_helpers import load_session, save_session
 
@@ -145,7 +145,7 @@ def read_aloud():
 
     try:
         # Initialize the OpenAI client
-        client = OpenAI(api_key=mysecrets.API_KEYS["openai"])
+        client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
 
         def generate_audio_stream():
             """

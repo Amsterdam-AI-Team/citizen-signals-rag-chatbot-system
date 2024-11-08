@@ -7,7 +7,7 @@ from openai import OpenAI, AzureOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 import config as cfg
-import mysecrets
+import my_secrets
 
 def get_melding_attributes(melding, attribute, model_name, chat_history):
     """
@@ -27,12 +27,12 @@ def get_melding_attributes(melding, attribute, model_name, chat_history):
     )
 
     if cfg.ENDPOINT == 'local':
-        client = OpenAI(api_key=mysecrets.API_KEYS["openai"])
+        client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
     
     elif cfg.ENDPOINT == 'azure':
         client = AzureOpenAI(
             azure_endpoint = cfg.ENDPOINT_AZURE, 
-            api_key=mysecrets.API_KEYS["openai_azure"],  
+            api_key=my_secrets.API_KEYS["openai_azure"],  
             api_version="2024-02-15-preview"
         )
     
@@ -79,12 +79,12 @@ def generate_image_caption(base64_image):
                 - total_tokens (int): total tokens used to process image.
         """
         if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=mysecrets.API_KEYS["openai"])
+            client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
 
         elif cfg.ENDPOINT == 'azure':
             client = AzureOpenAI(
                 azure_endpoint = cfg.ENDPOINT_AZURE, 
-                api_key=mysecrets.API_KEYS["openai_azure"],  
+                api_key=my_secrets.API_KEYS["openai_azure"],  
                 api_version="2024-02-15-preview"
             )
 

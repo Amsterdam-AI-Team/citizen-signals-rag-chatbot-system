@@ -7,7 +7,7 @@ from langchain_community.vectorstores import Chroma
 from openai import OpenAI, AzureOpenAI
 
 import config as cfg
-import mysecrets
+import my_secrets
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
 
 # Environment setup
@@ -88,11 +88,11 @@ class PolicyRetrieverTool:
         system_content = "Je bent een behulpzame assistent" if summarize else "Je bent een behulpzame ambtenaar."
 
         if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=mysecrets.API_KEYS["openai"])
+            client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
         elif cfg.ENDPOINT == 'azure':
             client = AzureOpenAI(
                 azure_endpoint=cfg.ENDPOINT_AZURE, 
-                api_key=mysecrets.API_KEYS["openai_azure"],  
+                api_key=my_secrets.API_KEYS["openai_azure"],  
                 api_version="2024-02-15-preview"
             )
 
