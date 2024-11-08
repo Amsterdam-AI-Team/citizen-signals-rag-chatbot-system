@@ -1,4 +1,5 @@
 # Adapt to your needs. This version includes typical data files we work with, along with the default python template.
+mysecrets.py
 
 # Text / html
 *.csv
