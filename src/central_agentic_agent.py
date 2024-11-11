@@ -149,9 +149,10 @@ class CentralAgent:
                 name="GetLicensePlatePermitInfo",
                 func=partial(self.get_license_plate_info),
                 description=(
-                    "Use this tool to find out whether a parking permit is linked to a license plate, in the format 'LICENSE_PLATE'."
-                    "for example useful when a car is parked on the pavement "
-                    "Returns 'No information found' if unsuccessful."
+                    "If the report is about a wrongly parked car, always use this tool to find out whether a permit is"
+                    "linked to the license plate (in the format 'LICENSE_PLATE') of that car."
+                    "For example, that could a when a car is parked on the pavement "
+                    " Returns 'No information found' if unsuccessful."
                 ),
             ),
             Tool(
@@ -426,7 +427,7 @@ if __name__ == "__main__":
         # "LICENSE_PLATE": "DC-743-SK"
     
         # Example melding 3 (noise)
-        "MELDING": "Er is erg veel lawaai bij station zuid.",
+        "MELDING": "Er is erg veel lawaai van bouwwerkzaamheden bij station zuid, ook op zondag.",
         "STRAATNAAM": "Zuidplein",
         "HUISNUMMER": "136",
         "POSTCODE": "1077XV",
