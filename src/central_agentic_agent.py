@@ -115,8 +115,9 @@ class CentralAgent:
                 name="GetBGTInfo",
                 func=partial(self.get_bgt_info),
                 description=(
-                    "Use this tool to get the BGT function of a given address "
-                    "in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'. Returns 'No information found' if unsuccessful."
+                    "Use this tool to get the BGT function of a given address, in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'."
+                    "The BGT function can indicate the jurisdiction of issues concerning that address."
+                    "Returns 'No information found' if unsuccessful."
                 ),
             ),
             Tool(
@@ -150,15 +151,16 @@ class CentralAgent:
                 description=(
                     "If the report is about a wrongly parked car, always use this tool to find out whether a permit is"
                     "linked to the license plate (in the format 'LICENSE_PLATE') of that car."
-                    "For example w that could a when a car is parked on the pavement "
+                    "For example, that could a when a car is parked on the pavement "
                     " Returns 'No information found' if unsuccessful."
                 ),
             ),
             Tool(
                 name="HandleNoiseComplaint",
                 func=partial(self.get_noise_permit),
-                description=("Use this tool find permits that can indicate that the noise from a complaint"
-                            "might be due to permitted noise."
+                description=("Use this tool find permits that permit noise in a certain area for a certain period."
+                            "A permit can indicate that the noise from a complaint might be due to permitted noise."
+                            "Returns 'No matching permit found.' if unsuccessful."
                 ),
             )
         ]
