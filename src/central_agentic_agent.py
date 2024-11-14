@@ -184,8 +184,8 @@ class CentralAgent:
             agent=agent,
             tools=self.tools,
             memory=self.memory,
-            verbose=True
-            # handle_parsing_errors=True,
+            verbose=True,
+            handle_parsing_errors="Check your output and make sure it conforms."
         )
         return agent_executor
 
