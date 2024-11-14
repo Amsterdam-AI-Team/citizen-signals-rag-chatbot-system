@@ -12,6 +12,7 @@ from tools.policy_retriever_tool import PolicyRetrieverTool
 from tools.license_plate_permit_tool import LicensePlatePermitTool
 from tools.meldingen_tool import MeldingenRetrieverTool
 from tools.noise_permits_tool import NoisePermitsTool
+from tools.address_owner_tool import AddressOwnerTool
 from helpers.melding_helpers import get_formatted_chat_history
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
@@ -87,6 +88,7 @@ class CentralAgent:
 
         self.WasteCollectionTool = WasteCollectionTool(straatnaam, huisnummer, postcode)
         self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
+        self.AddressOwnerTool = AddressOwnerTool(straatnaam, huisnummer)
         self.NoisePermitsTool = NoisePermitsTool(straatnaam, huisnummer, postcode, melding)
         self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
         if self.melding_attributes['LICENSE_PLATE_NEEDED'] == True:
@@ -116,7 +118,15 @@ class CentralAgent:
                 func=partial(self.get_bgt_info),
                 description=(
                     "Use this tool to get the BGT function of a given address, in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'."
-                    "The BGT function can indicate the jurisdiction of issues concerning that address."
+                    "Returns 'No information found' if unsuccessful."
+                ),
+            ),
+            Tool(
+                name="GetAddressOwnerInfo",
+                func=partial(self.get_address_owner_info),
+                description=(
+                    "Use this tool to get the owner of a given address, in the format 'STRAATNAAM, HUISNUMMER'."
+                    "The function can indicate the jurisdiction of issues concerning that address."
                     "Returns 'No information found' if unsuccessful."
                 ),
             ),
@@ -272,6 +282,23 @@ class CentralAgent:
                 return self.BGTTool.get_functie_from_gdf(gdf_bgt_info)
             else:
                 return "No information found"
+        except Exception as e:
+            logging.error(f"Failed to get BGT info: {e}")
+            return "No information found"
+        
+    def get_address_owner_info(self, street: str) -> str:
+        """
+        Retrieve BGT (Basisregistratie Grootschalige Topografie) information based on the provided address.
+
+        Args:
+            address (str): The address in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'.
+
+        Returns:
+            str: BGT information or 'No information found' if unsuccessful.
+        """
+        logging.info(f"Retrieving BGT info for address: {street}")
+        try:
+            return self.AddressOwnerTool.get_owner()
         except Exception as e:
             logging.error(f"Failed to get BGT info: {e}")
             return "No information found"
