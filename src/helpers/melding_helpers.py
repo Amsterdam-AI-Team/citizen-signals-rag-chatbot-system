@@ -3,14 +3,14 @@ import re
 import logging
 import os
 
-from openai import OpenAI, AzureOpenAI
+from openai import AzureOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 import config as cfg
-import my_secrets
+import my_secrets as sc
 import requests
 
-def get_melding_attributes(melding, attribute, model_name, chat_history):
+def get_melding_attributes(melding, attribute, LLM, chat_history):
     """
     Extract specified melding attribute (e.g., TYPE, ADDRESS) using a prompt-based approach.
 
@@ -26,28 +26,15 @@ def get_melding_attributes(melding, attribute, model_name, chat_history):
         melding=melding,
         history=get_formatted_chat_history(chat_history)
     )
-
-    if cfg.ENDPOINT == 'local':
-        client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
     
-    elif cfg.ENDPOINT == 'azure':
-        client = AzureOpenAI(
-            azure_endpoint = cfg.ENDPOINT_AZURE, 
-            api_key=my_secrets.API_KEYS["openai_azure"],  
-            api_version="2024-02-15-preview"
-        )
-    
-    completion = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": cfg.SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION},
-            {"role": "user", "content": prompt}
-        ],
-        response_format={"type": "json_object"}
+    response = LLM.prompt(
+        prompt=prompt,
+        system=cfg.SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION,
+        force_format="json"
     )
 
     # Load and update attributes based on response
-    response_data = json.loads(completion.choices[0].message.content)
+    response_data = json.loads(response)
     return response_data if response_data else {}
 
 def get_additional_address_info(melding):
@@ -96,15 +83,13 @@ def generate_image_caption(base64_image):
                 - content (str): Description of image.
                 - total_tokens (int): total tokens used to process image.
         """
-        if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
 
-        elif cfg.ENDPOINT == 'azure':
-            client = AzureOpenAI(
-                azure_endpoint = cfg.ENDPOINT_AZURE, 
-                api_key=my_secrets.API_KEYS["openai_azure"],  
-                api_version="2024-02-15-preview"
-            )
+        #TODO: transfer to CustomLLM implementation
+        client = AzureOpenAI(
+            azure_endpoint = cfg.AZURE_OPENAI_ENDPOINT, 
+            api_key=sc.API_KEY, 
+            api_version=cfg.AZURE_GPT_API_VERSION,
+        )
 
         response = client.chat.completions.create(
             model="gpt-4o",

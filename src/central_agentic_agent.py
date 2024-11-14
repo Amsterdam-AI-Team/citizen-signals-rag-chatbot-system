@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 import config as cfg
-import my_secrets
+import my_secrets as sc
 from tools.bgt_features_tool import BGTTool
 from tools.waste_collection_tool import WasteCollectionTool
 from tools.policy_retriever_tool import PolicyRetrieverTool
@@ -17,7 +17,6 @@ from helpers.melding_helpers import get_formatted_chat_history
 from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
-from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
 from codecarbon import EmissionsTracker
 
 class CentralAgent:
@@ -28,6 +27,7 @@ class CentralAgent:
 
     def __init__(
         self,
+        llm,
         melding_attributes: Optional[dict] = None,
         chat_history: Optional[list] = None,
     ):
@@ -44,7 +44,7 @@ class CentralAgent:
                                                input_key="melding", return_messages=True)
 
         # Initialize the language model
-        self.llm = self.initialize_llm()
+        self.llm = llm
 
         # Define the tools available to the agent
         self.tools = self.initialize_tools()
@@ -52,26 +52,6 @@ class CentralAgent:
         # Initialize the agent
         self.agent_executor = self.initialize_agent_executor()
 
-    def initialize_llm(self):
-        """
-        Initialize the language model based on the configuration.
-        """
-        if cfg.ENDPOINT == 'local':
-            llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=my_secrets.API_KEYS["openai"], 
-                temperature=0
-            )
-        elif cfg.ENDPOINT == 'azure':
-            llm = AzureChatOpenAI(
-                deployment_name='gpt-4o',
-                model_name='gpt-4o',
-                azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=my_secrets.API_KEYS["openai_azure"],
-                api_version="2024-02-15-preview",
-                temperature=0,
-            )
-        print(f"The OpenAI LLM is using model: {llm.model_name}")
-        return llm
 
     def initialize_tools(self):
         """
@@ -431,10 +411,13 @@ class CentralAgent:
 # Example usage:
 if __name__ == "__main__":
 
+    logging.basicConfig(level=logging.INFO)
+
     if cfg.track_emissions:
         tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
-        co2_signal_api_token = my_secrets.API_KEYS['co2-signal'])
+        co2_signal_api_token = sc.API_KEYS['co2-signal'])
         tracker.start()
+
 
     melding_attributes = {
 
@@ -482,9 +465,28 @@ if __name__ == "__main__":
         # "POSTCODE": "1074HP",
         # "LICENSE_PLATE_NEEDED": False,
 
+        "MELDING": "Graffiti op Admiralengracht",
+        "STRAATNAAM": "Admiralengracht",
+        "HUISNUMMER": "107",
+        "POSTCODE": "1057VN",
+        "LICENSE_PLATE_NEEDED": False,
     }
 
+    from helpers.llm_helpers import LLMRouter
+
+    llm = LLMRouter.get_model(
+        provider=cfg.provider,
+        model_name=cfg.model_name,
+        api_endpoint=cfg.AZURE_OPENAI_ENDPOINT,
+        api_key=sc.API_KEY,
+        api_version=cfg.AZURE_GPT_API_VERSION,
+        hf_token=sc.HF_TOKEN,
+        hf_cache=cfg.HUGGING_CACHE,
+        params=cfg.params,
+    )
+
     agent = CentralAgent(
+        llm,
         chat_history=[],
         melding_attributes=melding_attributes,
     )

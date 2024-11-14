@@ -5,12 +5,13 @@ import threading
 import sounddevice # keep this import ABOVE 'import pyaudio' for audio streaming.
 import pyaudio
 from flask import Flask, render_template, request, jsonify, Response, stream_with_context
-from openai import OpenAI
+from openai import AzureOpenAI
 
 import config as cfg
-import my_secrets
+import my_secrets as sc
 from process_melding import  MeldingProcessor
 from helpers.melding_helpers import load_session, save_session
+from helpers.llm_helpers import LLMRouter
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 """
@@ -26,6 +27,17 @@ This module sets up the routes and logic for:
 chat_history = []
 session_active = False
 melding_attributes = {}
+
+LLM = LLMRouter.get_model(
+    provider=cfg.provider,
+    model_name=cfg.model_name,
+    api_endpoint=cfg.AZURE_OPENAI_ENDPOINT,
+    api_key=sc.API_KEY,
+    api_version=cfg.AZURE_GPT_API_VERSION,
+    hf_token=sc.HF_TOKEN,
+    hf_cache=cfg.HF_CACHE,
+    params=cfg.params,
+)
 
 @app.route('/')
 def home():
@@ -61,8 +73,10 @@ def handle_melding_query():
         session_active = True  # Enable session for follow-up conversation
 
     # Initialize or update the complaint session
-    melding_processor = MeldingProcessor(melding=melding, model_name=model_name, base64_image=image, 
-                                         chat_history=chat_history, melding_attributes=melding_attributes)
+    melding_processor = MeldingProcessor(
+        melding=melding, llm=LLM, base64_image=image, chat_history=chat_history,
+        melding_attributes=melding_attributes
+    )
     melding_processor.process_melding()
 
     # Update the chat history and save the session
@@ -145,7 +159,11 @@ def read_aloud():
 
     try:
         # Initialize the OpenAI client
-        client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
+        client = AzureOpenAI(
+            azure_endpoint=cfg.AZURE_OPENAI_ENDPOINT,
+            api_key=sc.API_KEY,
+            api_version=cfg.AZURE_GPT_API_VERSION,
+        )
 
         def generate_audio_stream():
             """
@@ -162,6 +180,7 @@ def read_aloud():
 
             yield json.dumps({"status": "stream_started"}) + "\n"  # Send initial message to frontend
 
+            #TODO: transfer to CustomLLM implementation
             # Stream the audio data to the speakers in real-time
             with client.audio.speech.with_streaming_response.create(
                     model="tts-1",

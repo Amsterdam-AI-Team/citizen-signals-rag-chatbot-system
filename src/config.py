@@ -9,7 +9,7 @@ ADDRESS_OWNERS_PATH = f'{BASE_PATH}/raw_data/address_owners/'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
-HUGGING_CACHE = f"{BASE_PATH}/../hugging_cache"
+HUGGING_CACHE = "/home/azureuser/cloudfiles/code/hugging_cache/"
 
 FAISS_NOISE_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db'
 METADATA_STORE_FILE = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
@@ -33,13 +33,44 @@ index_storage_folder = f"{meldingen_out_folder}/indices"
 
 track_emissions = True # Set to True to track emissions to 
 
+
 embedding_model_name = "intfloat/multilingual-e5-large"
 # embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
 # embeddng_model_name = "NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers"
 
-ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
 
-ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
+gpt_params = {
+    "frequency_penalty": 0,
+    "presence_penalty": 0,
+    # "stop": None,
+}
+
+hf_params = {
+    "do_sample": True,
+    # "temperature": 0.6,
+    # "top_p": 0.65,
+    "temperature": 0.25,
+    "top_p": 0.3,
+    # "top_k": 25,
+    "max_new_tokens": 1000,
+    "no_repeat_ngram_size": 3,
+    "num_return_sequences": 1,
+}
+
+# provider = "azure"
+# model_name = "gpt-4o"
+# params = gpt_params
+
+provider = "huggingface"
+# model_name = "mistral-7b-instruct"
+model_name = "mixtral-7b-instruct"
+# model_name = "llama-13b-chat"
+# model_name = "llama3-8b-instruct"
+params = hf_params
+
+AZURE_OPENAI_ENDPOINT = "https://ai-openai-ont.openai.azure.com/"
+AZURE_GPT_API_VERSION = "2024-02-15-preview"
+AZURE_ADA_API_VERSION = "2024-06-01"
 
 ENDPOINT_BAG = "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatie/bagadresinformatie/"
 

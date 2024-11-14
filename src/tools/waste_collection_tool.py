@@ -25,7 +25,7 @@ class WasteCollectionTool:
         self.straatnaam = straatnaam
         self.huisnummer = huisnummer
         self.postcode = postcode
-        self.api_data = self._fetch_api_data()
+        self.api_data = {}
         self.transformer = Transformer.from_crs("EPSG:28992", "EPSG:4326", always_xy=True)
 
         print(f"Informatie {self.straatnaam} {self.huisnummer}, {self.postcode}\n")
@@ -67,6 +67,8 @@ class WasteCollectionTool:
         Returns:
             str: A formatted string containing the waste collection information for the address.
         """
+        if not self.api_data:
+            self.api_data = self._fetch_api_data()
         afvalwijzer_list = self.api_data['_embedded']['afvalwijzer']
         result = []
 

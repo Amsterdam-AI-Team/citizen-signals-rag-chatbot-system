@@ -2,8 +2,9 @@ import os
 import logging
 
 from datetime import datetime
-from openai import OpenAI, AzureOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from central_agentic_agent import CentralAgent
+
 
 from helpers.melding_helpers import (
     get_melding_attributes, 
@@ -26,18 +27,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class MeldingProcessor:
     """
     Base class to process general complaints. Designed to handle generic melding-specific logic,
-    including identifying intents and extracting entities.
+    including identifying intents and extracting entities
     """
 
-    def __init__(self, melding, model_name, base64_image=None, chat_history=None, melding_attributes=None):
+    def __init__(self, melding, LLM, base64_image=None, chat_history=None, melding_attributes=None):
         """
         Initialize the MeldingProcessor with the melding text, model name, and optional attributes.
         """
         self.melding = melding
-        self.model_name = model_name
         self.base64_image = base64_image
         self.chat_history = chat_history or []
         self.melding_attributes = melding_attributes or {}
+        self.LLM = LLM
+
 
     def process_melding(self):
         """
@@ -54,8 +56,8 @@ class MeldingProcessor:
             if not self.melding_attributes.get('LICENSE_PLATE'):
                 extracted_attributes = get_melding_attributes(
                     self.melding_attributes['IMAGE_CAPTION'], 
-                    'LICENSE_PLATE', 
-                    self.model_name, 
+                    'LICENSE_PLATE',
+                    self.LLM,
                     self.chat_history
                 )
                 if extracted_attributes:
@@ -63,7 +65,7 @@ class MeldingProcessor:
 
         # Step 2: Establish that melding is clear and has enough information to process it
         if not self.melding_attributes.get('TYPE'):
-            extracted_attributes = get_melding_attributes(self.melding, 'TYPE', self.model_name, self.chat_history)
+            extracted_attributes = get_melding_attributes(self.melding, 'TYPE', self.LLM, self.chat_history)
             if extracted_attributes:
                 self.melding_attributes.update(extracted_attributes)
                 self.melding_attributes['MELDING'] = self.melding
@@ -86,7 +88,7 @@ class MeldingProcessor:
 
         # Step 4: Obtain address details from chat history
         if not self.melding_attributes.get('ADDRESS'):
-            extracted_attributes = get_melding_attributes(self.melding, 'ADDRESS', self.model_name, self.chat_history)
+            extracted_attributes = get_melding_attributes(self.melding, 'ADDRESS', self.LLM, self.chat_history)
             if extracted_attributes:
                 self.melding_attributes.update(extracted_attributes)
 
@@ -105,7 +107,7 @@ class MeldingProcessor:
         if self._melding_requires_license_plate():
             if not self.melding_attributes.get('LICENSE_PLATE'):
                 # Attempt to extract from melding if not already done
-                extracted_attributes = get_melding_attributes(self.melding, 'LICENSE_PLATE', self.model_name, self.chat_history)
+                extracted_attributes = get_melding_attributes(self.melding, 'LICENSE_PLATE', self.LLM, self.chat_history)
                 if extracted_attributes:
                     self.melding_attributes.update(extracted_attributes)
                 else:
@@ -119,8 +121,7 @@ class MeldingProcessor:
             response.append("We gaan nu zoeken in onze interne documenten of we je behulpzame informatie kunnen geven die je melding nu al kan oplossen.")
 
             # Delegate to CentralAgent to build and execute agentic AI plan
-            from central_agentic_agent import CentralAgent
-            central_agent = CentralAgent(self.melding_attributes, self.chat_history)
+            central_agent = CentralAgent(self.LLM, self.melding_attributes, self.chat_history)
             central_agent.build_and_execute_plan()
             self.melding_attributes = central_agent.melding_attributes
 
@@ -145,21 +146,8 @@ class MeldingProcessor:
             type=self.melding_attributes['TYPE']
         )
 
-        if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
-        elif cfg.ENDPOINT == 'azure':
-            client = AzureOpenAI(
-                azure_endpoint=cfg.ENDPOINT_AZURE, 
-                api_key=my_secrets.API_KEYS["openai_azure"],  
-                api_version="2024-02-15-preview"
-            )
-
-        completion = client.chat.completions.create(
-            model=self.model_name,
-            messages=[
-                {"role": "system", "content": cfg.SYSTEM_CONTENT_INITIAL_RESPONSE},
-                {"role": "user", "content": prompt}
-            ]
+        self.melding_attributes['INITIAL_RESPONSE'] = self.LLM.prompt(
+            prompt=prompt, system=cfg.SYSTEM_CONTENT_INITIAL_RESPONSE,
         )
 
         self.melding_attributes['INITIAL_RESPONSE'] = completion.choices[0].message.content
@@ -201,28 +189,13 @@ class MeldingProcessor:
         prompt = f"Is het voor de volgende melding nodig om het kenteken van een voertuig te hebben om de melding te verwerken? Melding: \
             '{self.melding_attributes['MELDING']}'. Antwoord met 'ja' of 'nee'"
 
-        # Make an LLM call
-        if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
-        elif cfg.ENDPOINT == 'azure':
-            client = AzureOpenAI(
-                azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=my_secrets.API_KEYS["openai_azure"],
-                api_version="2024-02-15-preview"
-            )
-
-        completion = client.chat.completions.create(
-            model=self.model_name,
-            messages=[
-                {"role": "system", "content": "Je bent een assistent die bepaalt of een kenteken nodig is om een melding te verwerken."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-
-        response = completion.choices[0].message.content.strip().lower()
+        licence_plate_needed = self.LLM.prompt(
+            prompt=prompt,
+            system="Je bent een assistent die bepaalt of een kenteken nodig is om een melding te verwerken.",
+        ).strip().lower()
 
         # Parse the response
-        if 'ja' in response:
+        if 'ja' in licence_plate_needed:
             self.melding_attributes['LICENSE_PLATE_NEEDED'] = True
             return True
         else:
