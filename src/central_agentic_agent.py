@@ -156,10 +156,10 @@ class CentralAgent:
                 ),
             ),
             Tool(
-                name="HandleNoiseComplaint",
+                name="GetPermitInfo",
                 func=partial(self.get_noise_permit),
-                description=("Use this tool find permits that permit noise in a certain area for a certain period."
-                            "A permit can indicate that the noise from a complaint might be due to permitted noise."
+                description=("Use this tool find permits, for example for an event or that permit noise in a certain area for a certain period."
+                            "A permit can indicate that for example an event is permitted or the noise from a complaint might be due to permitted noise."
                             "Returns 'No matching permit found.' if unsuccessful."
                 ),
             )

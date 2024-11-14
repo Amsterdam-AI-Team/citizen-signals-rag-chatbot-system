@@ -30,7 +30,7 @@ meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
 
 index_storage_folder = f"{meldingen_out_folder}/indices"
 
-track_emissions = False # Set to True to track emissions to 
+track_emissions = True # Set to True to track emissions to 
 
 embedding_model_name = "intfloat/multilingual-e5-large"
 # embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
@@ -144,8 +144,8 @@ Your goal is to create a plan to retrieve and format information that could be s
 General Policies to Follow:
 {melding_handling_guidelines}
 
-If you find useful information using the tools, provide that information in your Final Answer (in the language of the melding) while adhering to the above policies.
-If you cannot find any useful information, respond with: "No useful information was found. Your melding will be escalated in the system." (in the language of the melding).
+If you find useful information using the tools, provide only that information in your Final Answer (in the language of the melding) while adhering to the above policies.
+If you cannot find any useful information, respond with: "Geen bruikbare informatie gevonden. Je melding wordt in ons systeem gezet om op te lossen."
 """
 
 AGENTIC_AI_AGENT_PROMPT_FORMAT_INSTRUCTIONS = """
@@ -197,13 +197,14 @@ Je mag ook eventuele links meegegeven die leiden naar de webpagina waar het antw
 
 MELDING_HANDLING_GUIDELINES = """
 Garbage Collection
-- If the report concerns garbage beside a container or an overflowing container, and the GetWasteCollectionInfo and GetDateTime tools confirm that \
-    collection is scheduled for the same day, inform the reporter that the garbage is likely to be collected later that day.
+- If the report concerns garbage beside a container or an overflowing container or anything similar, and the GetWasteCollectionInfo and current date and time confirm that \
+    collection is scheduled for the same day, inform the reporter that the garbage is likely to be collected later that day. If collection isn't scheduled \
+      until another day, inform the user that the garbage will not be picked up soon according to the regular pickup schedule, and the report will therefore \
+        be forwarded to the system for further handling.
 
-Check for Duplicate Reports
-- Always use the GetDuplicateMeldingen tool to identify duplicate reports. If duplicates are found, let the reporter know that the issue has already been \
-    noted and is being addressed. If no relevant information is found or the issue cannot be resolved with the available tools, respond with: "No useful \
-        information was found. Your report will be escalated in the system."
+Check for Duplicate Meldingen
+- If the GetDuplicateMeldingen tool indicates that duplicates are found, let the reporter know that the issue has already been \
+    noted and is being addressed. A melding is only considered duplicate if it exactly matches an existing one.
 
 Non-Municipal Areas
 - If the GetBGTInfo tool indicates that the "bgt functie" of the address is not classified as a "pand" (building), inform the reporter that the issue \
@@ -222,4 +223,9 @@ License Plate Permits
 - If the GetLicensePlatePermitInfo returns that a car has a permit, it is allowed to park on the pavement/sidewalk \
     If, in that case, the report is about a car that is parked on the pavement/sidewalk, please notify the reporter that this specific car is permitted to do this.\
         Do notify them that this is only the case for shorter periods (of up to a couple of hours) and not for (for example) multiple days.
+
+General Rules
+- Always use the GetDuplicateMeldingen tool to check wether duplicate meldingen exist.
+- Always use the GetBGTInfo to check if the melding is being made on municipality's jurisdiction.
+- Don't use salutation and closing in your final answer.
 """
