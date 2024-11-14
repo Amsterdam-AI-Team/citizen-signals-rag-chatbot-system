@@ -156,10 +156,10 @@ class CentralAgent:
                 ),
             ),
             Tool(
-                name="HandleNoiseComplaint",
+                name="GetPermitInfo",
                 func=partial(self.get_noise_permit),
-                description=("Use this tool find permits that permit noise in a certain area for a certain period."
-                            "A permit can indicate that the noise from a complaint might be due to permitted noise."
+                description=("Use this tool find permits, for example for an event or that permit noise in a certain area for a certain period."
+                            "A permit can indicate that for example an event is permitted or the noise from a complaint might be due to permitted noise."
                             "Returns 'No matching permit found.' if unsuccessful."
                 ),
             )
@@ -411,14 +411,14 @@ if __name__ == "__main__":
 
     melding_attributes = {
 
-        # # Example melding 1 (garbage)
-        # "MELDING": "Er ligt afval naast een container bij mij in de straat.",
-        # "STRAATNAAM": "Keizersgracht",
-        # "HUISNUMMER": "75",
-        # "POSTCODE": "1015CE",
-        # "LICENSE_PLATE_NEEDED": False,
+        # Example melding 1 (garbage collection)
+        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
+        "STRAATNAAM": "Keizersgracht",
+        "HUISNUMMER": "75",
+        "POSTCODE": "1015CE",
+        "LICENSE_PLATE_NEEDED": False,
 
-        # Example melding 2 (parking)
+        # Example melding 2 (parking permit)
         # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
         # "STRAATNAAM": "Keizersgracht",
         # "HUISNUMMER": "75",
@@ -426,12 +426,34 @@ if __name__ == "__main__":
         # "LICENSE_PLATE_NEEDED": True,
         # "LICENSE_PLATE": "DC-743-SK"
     
-        # Example melding 3 (noise)
-        "MELDING": "Er is erg veel lawaai van bouwwerkzaamheden bij station zuid, ook op zondag.",
-        "STRAATNAAM": "Zuidplein",
-        "HUISNUMMER": "136",
-        "POSTCODE": "1077XV",
-        "LICENSE_PLATE_NEEDED": False,
+        # Example melding 3 (noise permit)
+        # "MELDING": "Er is erg veel lawaai van bouwwerkzaamheden bij station zuid, ook op zondag.",
+        # "STRAATNAAM": "Zuidplein",
+        # "HUISNUMMER": "136",
+        # "POSTCODE": "1077XV",
+        # "LICENSE_PLATE_NEEDED": False,
+
+        # Example melding 4 (responsibility other party)
+        # "MELDING": "Er ligt een gewonde duif op straat",
+        # "STRAATNAAM": "Ertskade",
+        # "HUISNUMMER": "164",
+        # "POSTCODE": "1019BB",
+        # "LICENSE_PLATE_NEEDED": False,
+
+        # Example melding 5 (duplicate melding)
+        # "MELDING": "Zwervers voor de Albert Heijn, klanten worden bang.",
+        # "STRAATNAAM": "Wibautstraat",
+        # "HUISNUMMER": "80",
+        # "POSTCODE": "1091GP",
+        # "LICENSE_PLATE_NEEDED": False,
+
+        # Example melding 7 (policy)
+        # "MELDING": "Mijn fiets is onterecht weggehaald, ik had hem 8 weken bij mij voor de deur staan. \
+        # Nu moest ik geld betalen om hem op te halen. Ik wil dit geld terug.",
+        # "STRAATNAAM": "Amsteldijk",
+        # "HUISNUMMER": "10",
+        # "POSTCODE": "1074HP",
+        # "LICENSE_PLATE_NEEDED": False,
 
     }
 
