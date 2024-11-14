@@ -5,12 +5,24 @@ as well as some HuggingFace models.
 """
 import logging
 import os
+import sys
+sys.path.append("..")
+
 from abc import ABC, abstractmethod
 
 import torch
-from llm_config import MODEL_MAPPING
+from .llm_config import MODEL_MAPPING
 from openai import AzureOpenAI
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import StoppingCriteria, StoppingCriteriaList
+
+from pydantic import Field
+from typing import Any, Dict, Iterator, List, Mapping, Optional
+
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun
+from langchain_core.language_models.llms import LLM
+from langchain_core.outputs import GenerationChunk
+# from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
 
 
 class UnsupportedModelError(Exception):
@@ -19,23 +31,54 @@ class UnsupportedModelError(Exception):
     pass
 
 
-class LLM(ABC):
+# class StoppingCriteriaSub(StoppingCriteria):
+
+#     def __init__(self, stops = [], encounters=1):
+#       super().__init__()
+#       self.stops = stops
+#       self.ENCOUNTERS = encounters
+
+#     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor):
+#       stop_count = 0
+#       for stop in self.stops:
+#         stop_count = (stop == input_ids[0]).sum().item()
+
+#       if stop_count >= self.ENCOUNTERS:
+#           return True
+#       return False
+
+
+class StoppingCriteriaSub(StoppingCriteria):
+
+    def __init__(self, stops = [], encounters=1):
+        super().__init__()
+        self.stops = [stop.to("cuda") for stop in stops]
+
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor):
+        for stop in self.stops:
+            if torch.all((stop == input_ids[0][-len(stop):])).item():
+                return True
+
+        return False
+
+
+class CustomLLM(LLM):
     """Base LLM class"""
 
     @abstractmethod
-    def prompt(self, prompt, context=None, system=None):
+    def prompt(self, prompt, context=None, system=None, response_format=None):
         """Function to prompt model should always be implemented"""
         raise NotImplementedError("Implement prompt function")
 
 
-class HuggingFaceLLM(LLM):
+class HuggingFaceLLM(CustomLLM):
     """A class to handle self-hosted HG models"""
-
-    def __init__(self, model_name, hf_token, params=None):
-        self.model_name = model_name
-        self.hf_token = hf_token
-        self.params = params or {}
-        self._load_model()
+    model_name = ""
+    hf_token = ""
+    hf_cache = ""
+    params = {}
+    model:Any = None
+    tokenizer:Any = None
 
     def _load_model(self):
         """
@@ -44,7 +87,7 @@ class HuggingFaceLLM(LLM):
         """
         logging.info(f"Loading {self.model_name}")
         if self.model_name not in MODEL_MAPPING:
-            raise UnsupportedModelError(f"Unsupported Model. Choose from {MODEL_MAPPING.keys()}")
+            raise UnsupportedModelError(f"Unsupported Model {self.model_name}. Choose from {MODEL_MAPPING.keys()}")
 
         model_config = MODEL_MAPPING[self.model_name]
         model_id = model_config["id"]
@@ -55,41 +98,86 @@ class HuggingFaceLLM(LLM):
         }
         kwargs.update(model_config["kwargs"])
 
-        self.model = AutoModelForCausalLM.from_pretrained(model_id, **kwargs)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id, **kwargs)
+        self.model = AutoModelForCausalLM.from_pretrained(model_id, cache_dir=self.hf_cache, **kwargs)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir=self.hf_cache, **kwargs)
 
-    def prompt(self, prompt, context=None, system=None):
-        """Promp model. Use cuda if avalable."""
+
+    def get_stopping_criteria(self, stop):
+        if not self.model:
+            self._load_model()
+
+        stop_words_ids = [
+            self.tokenizer(stop_word, return_tensors='pt')['input_ids'].squeeze() 
+            for stop_word in stop
+        ]
+
+        stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(stops=stop_words_ids)])
+        return stopping_criteria
+
+
+    def prompt(self, prompt, stop=None, context=None, system=None, force_format=None):
+
+        if not self.model:
+            self._load_model()
+
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         input_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(device)
         attention_mask = torch.ones(input_ids.shape).to(device)
+
+        if stop:
+            stopping_criteria = self.get_stopping_criteria(stop)
+        else:
+            stopping_criteria = None
 
         output = self.model.generate(
             input_ids,
             attention_mask=attention_mask,
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.eos_token_id,
+            stopping_criteria=stopping_criteria,
             **self.params,
         )
 
-        response = self.tokenizer.decode(output[0], skip_special_tokens=True)
+        response = self.tokenizer.decode(output[0], skip_special_tokens=True).removeprefix(prompt)
+        # print(response)
 
         return response
 
 
-class OpenAILLM:
+    @property
+    def _llm_type(self) -> str:
+        """Get the type of language model used by this chat model. Used for logging purposes only."""
+        return "CustomHuggingFaceModel"
+
+
+    def _call(self, prompt, stop=None, run_manager=None, **kwargs):
+        """Run the LLM on the given input.
+        Args:
+            prompt: The prompt to generate from.
+            stop: Stop words to use when generating. Model output is cut off at the
+                first occurrence of any of the stop substrings.
+            run_manager: Callback manager for the run.
+            **kwargs: Arbitrary additional keyword arguments. These are usually passed
+                to the model provider API call.
+
+        Returns:
+            The model output as a string. Actual completions SHOULD NOT include the prompt.
+        """
+
+        return self.prompt(prompt, stop=stop)
+
+
+class OpenAILLM(CustomLLM):
     """
     A class to support use of OpenAI LLMs.
     Expects Azure deployment and corresponding endpoint, key, etc.
     """
-
-    def __init__(self, model_name, api_endpoint, api_key, api_version, params=None):
-        self.model_name = model_name
-        self.api_endpoint = api_endpoint
-        self.api_key = api_key
-        self.api_version = api_version
-        self.params = params or {}
-        self.client = self._get_client()
+    model_name = ""
+    api_endpoint = ""
+    api_key = ""
+    api_version = ""
+    params = {}
+    client:Any = None
 
     def _get_client(self):
         client = AzureOpenAI(
@@ -97,14 +185,20 @@ class OpenAILLM:
             api_key=self.api_key,
             api_version=self.api_version,
         )
+
         return client
 
-    def prompt(self, prompt, context=None, system=None):
+
+    def prompt(self, prompt, stop=None, context=None, system=None, force_format=None):
         """
         Prompt model.
         Starts from empty history.
         #TODO: pass full chat history.
         """
+
+        if not self.client:
+            self.client = self._get_client()
+
         conversation = []
 
         if system:
@@ -115,17 +209,57 @@ class OpenAILLM:
 
         conversation.append({"role": "user", "content": prompt})
 
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=conversation,
-            **self.params,
-        )
+        if force_format:
+            if force_format == "json":
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=conversation,
+                    **self.params,
+                    stop=stop,
+                    response_format={"type": "json_object"},
+                )
+
+            else:
+                raise NotImplementedError(
+                    f"Currently there is no support for special formats other than json"
+                )
+
+        else:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=conversation,
+                **self.params,
+                stop=stop,
+            )
 
         finish_reason = response.choices[0].finish_reason
         if finish_reason != "stop":
             print(finish_reason)
 
         return response.choices[0].message.content
+
+
+    @property
+    def _llm_type(self) -> str:
+        """Get the type of language model used by this chat model. Used for logging purposes only."""
+        return "CustomGPTDeployment"
+
+
+    def _call(self, prompt, stop=None, run_manager=None, **kwargs):
+        """Run the LLM on the given input.
+        Args:
+            prompt: The prompt to generate from.
+            stop: Stop words to use when generating. Model output is cut off at the
+                first occurrence of any of the stop substrings.
+            run_manager: Callback manager for the run.
+            **kwargs: Arbitrary additional keyword arguments. These are usually passed
+                to the model provider API call.
+
+        Returns:
+            The model output as a string. Actual completions SHOULD NOT include the prompt.
+        """
+
+        return self.prompt(prompt, stop=stop)
 
 
 class LLMRouter:
@@ -141,21 +275,33 @@ class LLMRouter:
         api_key=None,
         api_version=None,
         hf_token=None,
+        hf_cache=None,
         params=None,
     ):
         """
         Get corresponding model.
         #TODO: Add support for HF deployments on Azure
         """
+        logging.info(f"Getting a model. Provider: {provider}; Model: {model_name}")
+
         if provider == "azure":
             if "gpt" in model_name:
-                return OpenAILLM(model_name, api_endpoint, api_key, api_version, params)
+                return OpenAILLM(
+                    model_name=model_name,
+                    api_endpoint=api_endpoint,
+                    api_key=api_key,
+                    api_version=api_version,
+                    params=params)
             else:
                 raise NotImplementedError(
                     "Currently there is no support for models other than GPT on Azure."
                 )
         elif provider == "huggingface":
-            return HuggingFaceLLM(model_name, hf_token, params)
+            return HuggingFaceLLM(
+                model_name=model_name,
+                hf_token=hf_token,
+                hf_cache=hf_cache,
+                params=params)
         else:
             raise ValueError(
                 f"Unknown provider specified ({provider})."
@@ -196,14 +342,12 @@ if __name__ == "__main__":
     print(f"GPT Response to {test}!: {model.prompt(test)}")
 
     # Test HF Model
-    HUGGING_CACHE = "/home/azureuser/cloudfiles/code/hugging_cache"
-    os.environ["TRANSFORMERS_CACHE"] = HUGGING_CACHE
-    os.environ["HF_HOME"] = HUGGING_CACHE
 
     model = LLMRouter.get_model(
         provider="huggingface",
         model_name="mistral-7b-instruct",
         hf_token=os.environ["HF_TOKEN"],
+        hf_cache=os.environ["HF_CACHE"],
         params=hf_params,
     )
     print(f"HF Response to {test}!: {model.prompt(test)}")

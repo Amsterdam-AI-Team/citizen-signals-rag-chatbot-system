@@ -11,6 +11,10 @@ MODEL_MAPPING = {
         "id": "mistralai/Mistral-7B-Instruct-v0.1",
         "kwargs": {"torch_dtype": "auto"},
     },
+    "mixtral-7b-instruct": {
+        "id": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "kwargs": {"torch_dtype": "auto"},
+    },
     "llama-7b-chat": {
         "id": "meta-llama/Llama-2-7b-chat-hf",
         "kwargs": {},
@@ -23,4 +27,8 @@ MODEL_MAPPING = {
         "id": "meta-llama/Llama-2-70b-chat-hf",
         "kwargs": {},
     },
+    "llama3-8b-instruct": {
+        "id": "meta-llama/Meta-Llama-3-8B-Instruct",
+        "kwargs": {},
+    }
 }
