@@ -5,6 +5,7 @@ BASE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen'
 CHROMA_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/chroma'
 DOCUMENTS_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
 PERMITS_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_license_plates/'
+ADDRESS_OWNERS_PATH = f'{BASE_PATH}/raw_data/address_owners/'
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
@@ -207,7 +208,7 @@ Check for Duplicate Meldingen
     noted and is being addressed. A melding is only considered duplicate if it exactly matches an existing one.
 
 Non-Municipal Areas
-- If the GetBGTInfo tool indicates that the "bgt functie" of the address is not classified as a "pand" (building), inform the reporter that the issue \
+- If the GetAddressOwnerInfo tool indicates that the owner of the address is Prorail, NS or any other non-municipal organisation, inform the reporter that the issue \
     is outside the municipality's jurisdiction and should be reported to the appropriate party.
 
 Policy-Specific Responses
@@ -226,6 +227,6 @@ License Plate Permits
 
 General Rules
 - Always use the GetDuplicateMeldingen tool to check wether duplicate meldingen exist.
-- Always use the GetBGTInfo to check if the melding is being made on municipality's jurisdiction.
+- Always use the GetAddressOwnerInfo to check if the melding is being made on municipality's jurisdiction.
 - Don't use salutation and closing in your final answer.
 """
