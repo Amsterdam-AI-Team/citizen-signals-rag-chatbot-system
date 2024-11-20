@@ -5,6 +5,7 @@ as well as some HuggingFace models.
 """
 import logging
 import os
+import requests
 import sys
 sys.path.append("..")
 
@@ -12,6 +13,7 @@ from abc import ABC, abstractmethod
 
 import torch
 from .llm_config import MODEL_MAPPING
+from .llm_templates import format_prompt
 from openai import AzureOpenAI
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import StoppingCriteria, StoppingCriteriaList
@@ -31,28 +33,12 @@ class UnsupportedModelError(Exception):
     pass
 
 
-# class StoppingCriteriaSub(StoppingCriteria):
-
-#     def __init__(self, stops = [], encounters=1):
-#       super().__init__()
-#       self.stops = stops
-#       self.ENCOUNTERS = encounters
-
-#     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor):
-#       stop_count = 0
-#       for stop in self.stops:
-#         stop_count = (stop == input_ids[0]).sum().item()
-
-#       if stop_count >= self.ENCOUNTERS:
-#           return True
-#       return False
-
-
 class StoppingCriteriaSub(StoppingCriteria):
 
     def __init__(self, stops = [], encounters=1):
         super().__init__()
-        self.stops = [stop.to("cuda") for stop in stops]
+        device = get_device()
+        self.stops = [stop.to(device) for stop in stops]
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor):
         for stop in self.stops:
@@ -69,6 +55,53 @@ class CustomLLM(LLM):
     def prompt(self, prompt, context=None, system=None, response_format=None):
         """Function to prompt model should always be implemented"""
         raise NotImplementedError("Implement prompt function")
+
+
+    def _call(self, prompt, stop=None, run_manager=None, **kwargs):
+        """Run the LLM on the given input.
+        Args:
+            prompt: The prompt to generate from.
+            stop: Stop words to use when generating. Model output is cut off at the
+                first occurrence of any of the stop substrings.
+            run_manager: Callback manager for the run.
+            **kwargs: Arbitrary additional keyword arguments. These are usually passed
+                to the model provider API call.
+
+        Returns:
+            The model output as a string. Actual completions SHOULD NOT include the prompt.
+        """
+
+        return self.prompt(prompt, stop=stop)
+
+
+class OllamaLLM(CustomLLM):
+    model_name = ""
+    ollama_endpoint = ""
+    # hf_cache = ""
+    params = {}
+
+    def prompt(self, prompt, stop=None, context=None, system=None, force_format=None):
+
+        # conversation = [{"role": "user", "content": prompt}]
+        # output = ollama.chat(model=self.model_name, messages=conversation)
+
+        # response = output['message']['content']
+
+        headers = {"Content-Type": "application/json"}
+        data = {
+            "model": self.model_name,
+            "prompt": prompt,
+        }
+
+        response = requests.post(self.ollama_endpoint, json=data, headers=headers)
+        # response.raise_for_status()  # Raise an error for HTTP issues
+
+        return response
+
+    @property
+    def _llm_type(self) -> str:
+        """Get the type of language model used by this chat model. Used for logging purposes only."""
+        return "CustomOllamaModel"
 
 
 class HuggingFaceLLM(CustomLLM):
@@ -120,8 +153,13 @@ class HuggingFaceLLM(CustomLLM):
         if not self.model:
             self._load_model()
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        input_ids = self.tokenizer.encode(prompt, return_tensors="pt").to(device)
+        conversation = [{"role": "user", "content": prompt}]
+
+        # formatted_prompt = self.tokenizer.apply_chat_template(conversation, tokenize=False)
+        formatted_prompt = format_prompt(prompt, model_name=self.model_name)
+
+        device = get_device()
+        input_ids = self.tokenizer.encode(formatted_prompt, return_tensors="pt").to(device)
         attention_mask = torch.ones(input_ids.shape).to(device)
 
         if stop:
@@ -135,11 +173,11 @@ class HuggingFaceLLM(CustomLLM):
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.eos_token_id,
             stopping_criteria=stopping_criteria,
+            # return_full_text=False,
             **self.params,
         )
 
-        response = self.tokenizer.decode(output[0], skip_special_tokens=True).removeprefix(prompt)
-        # print(response)
+        response = self.tokenizer.decode(output[0], skip_special_tokens=True).replace(formatted_prompt.removeprefix("<s>"), "")
 
         return response
 
@@ -148,23 +186,6 @@ class HuggingFaceLLM(CustomLLM):
     def _llm_type(self) -> str:
         """Get the type of language model used by this chat model. Used for logging purposes only."""
         return "CustomHuggingFaceModel"
-
-
-    def _call(self, prompt, stop=None, run_manager=None, **kwargs):
-        """Run the LLM on the given input.
-        Args:
-            prompt: The prompt to generate from.
-            stop: Stop words to use when generating. Model output is cut off at the
-                first occurrence of any of the stop substrings.
-            run_manager: Callback manager for the run.
-            **kwargs: Arbitrary additional keyword arguments. These are usually passed
-                to the model provider API call.
-
-        Returns:
-            The model output as a string. Actual completions SHOULD NOT include the prompt.
-        """
-
-        return self.prompt(prompt, stop=stop)
 
 
 class OpenAILLM(CustomLLM):
@@ -234,7 +255,7 @@ class OpenAILLM(CustomLLM):
 
         finish_reason = response.choices[0].finish_reason
         if finish_reason != "stop":
-            print(finish_reason)
+            logging.info(f"Finish reason: {finish_reason}")
 
         return response.choices[0].message.content
 
@@ -243,23 +264,6 @@ class OpenAILLM(CustomLLM):
     def _llm_type(self) -> str:
         """Get the type of language model used by this chat model. Used for logging purposes only."""
         return "CustomGPTDeployment"
-
-
-    def _call(self, prompt, stop=None, run_manager=None, **kwargs):
-        """Run the LLM on the given input.
-        Args:
-            prompt: The prompt to generate from.
-            stop: Stop words to use when generating. Model output is cut off at the
-                first occurrence of any of the stop substrings.
-            run_manager: Callback manager for the run.
-            **kwargs: Arbitrary additional keyword arguments. These are usually passed
-                to the model provider API call.
-
-        Returns:
-            The model output as a string. Actual completions SHOULD NOT include the prompt.
-        """
-
-        return self.prompt(prompt, stop=stop)
 
 
 class LLMRouter:
@@ -271,6 +275,7 @@ class LLMRouter:
     def get_model(
         provider,
         model_name="falcon",
+        ollama_endpoint=None,
         api_endpoint=None,
         api_key=None,
         api_version=None,
@@ -302,12 +307,21 @@ class LLMRouter:
                 hf_token=hf_token,
                 hf_cache=hf_cache,
                 params=params)
+
+        elif provider == "ollama":
+            return OllamaLLM(
+                model_name=model_name,
+                ollama_endpoint=ollama_endpoint,
+                params=params)
+
         else:
             raise ValueError(
                 f"Unknown provider specified ({provider})."
                 "Current support for azure and huggingface only"
             )
 
+def get_device():
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -315,7 +329,7 @@ if __name__ == "__main__":
     gpt_params = {
         "frequency_penalty": 0,
         "presence_penalty": 0,
-        "stop": None,
+        # "stop": None,
     }
     hf_params = {
         "do_sample": True,
@@ -342,7 +356,6 @@ if __name__ == "__main__":
     print(f"GPT Response to {test}!: {model.prompt(test)}")
 
     # Test HF Model
-
     model = LLMRouter.get_model(
         provider="huggingface",
         model_name="mistral-7b-instruct",
@@ -351,3 +364,11 @@ if __name__ == "__main__":
         params=hf_params,
     )
     print(f"HF Response to {test}!: {model.prompt(test)}")
+
+    # Test Ollama Model
+    model = LLMRouter.get_model(
+        provider="ollama",
+        model_name="mistral",
+        params=hf_params,
+    )
+    print(f"Ollama Response to {test}!: {model.prompt(test)}")

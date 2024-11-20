@@ -43,16 +43,15 @@ gpt_params = {
     "frequency_penalty": 0,
     "presence_penalty": 0,
     # "stop": None,
+    "temperature": 0.25,
 }
 
 hf_params = {
     "do_sample": True,
-    # "temperature": 0.6,
-    # "top_p": 0.65,
     "temperature": 0.25,
     "top_p": 0.3,
     # "top_k": 25,
-    "max_new_tokens": 1000,
+    "max_new_tokens": 200,
     "no_repeat_ngram_size": 3,
     "num_return_sequences": 1,
 }
@@ -61,12 +60,18 @@ hf_params = {
 # model_name = "gpt-4o"
 # params = gpt_params
 
+# provider = "ollama"
+# model_name = "mistral:instruct"
+
 provider = "huggingface"
-# model_name = "mistral-7b-instruct"
-model_name = "mixtral-7b-instruct"
+model_name = "mistral-7b-instruct"
+# model_name = "mixtral-7b-instruct"
 # model_name = "llama-13b-chat"
 # model_name = "llama3-8b-instruct"
 params = hf_params
+
+
+OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
 
 AZURE_OPENAI_ENDPOINT = "https://ai-openai-ont.openai.azure.com/"
 AZURE_GPT_API_VERSION = "2024-02-15-preview"

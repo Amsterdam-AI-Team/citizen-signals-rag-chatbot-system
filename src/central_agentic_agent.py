@@ -477,6 +477,7 @@ if __name__ == "__main__":
     llm = LLMRouter.get_model(
         provider=cfg.provider,
         model_name=cfg.model_name,
+        ollama_endpoint=cfg.OLLAMA_ENDPOINT,
         api_endpoint=cfg.AZURE_OPENAI_ENDPOINT,
         api_key=sc.API_KEY,
         api_version=cfg.AZURE_GPT_API_VERSION,
