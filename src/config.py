@@ -48,27 +48,32 @@ gpt_params = {
 
 hf_params = {
     "do_sample": True,
-    "temperature": 0.25,
-    "top_p": 0.3,
-    # "top_k": 25,
+    "temperature": 0.2,
+    "top_p": 0.8,
+    "top_k": 25,
     "max_new_tokens": 200,
     "no_repeat_ngram_size": 3,
     "num_return_sequences": 1,
 }
 
-# provider = "azure"
-# model_name = "gpt-4o"
-# params = gpt_params
 
+# Config to run using GPT
+provider = "azure"
+model_name = "gpt-4o"
+params = gpt_params
+
+# Config to run using ollama (hardly tested, requires running model first)
 # provider = "ollama"
 # model_name = "mistral:instruct"
+# params = hf_params
 
-provider = "huggingface"
-model_name = "mistral-7b-instruct"
-# model_name = "mixtral-7b-instruct"
-# model_name = "llama-13b-chat"
-# model_name = "llama3-8b-instruct"
-params = hf_params
+# Config to run using an open model using HuggingFace & transformers
+# provider = "huggingface"
+# model_name = "mistral-7b-instruct"
+# # model_name = "mixtral-7b-instruct"
+# # model_name = "llama-13b-chat"
+# # model_name = "llama3-8b-instruct"
+# params = hf_params
 
 
 OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
@@ -196,7 +201,7 @@ Use the following format:
 
 Question: the melding to be resolved
 Thought: your reasoning about what to do
-Action: the action to take, should be one of [{tool_names}]
+Action: the action to take
 Action Input: the input to the action
 Observation: the result of the action
 ... (this Thought/Action/Observation can repeat N times)
@@ -204,6 +209,21 @@ Thought: I have gathered all possible information.
 Draft: a first version of the response to the melder
 Action: re-write the draft to create a final answer that doesn't share privacy sensitive information (like names or addresses).
 Final Answer: the response to the melder
+
+When responding, output the response in one of two formats:
+
+**Option 1:**
+If you want to use a tool, respond with:
+Action: the action to take; This must be always one of [{tool_names}]. Do not come up with any other tools
+Action Input: the input to the action
+Example:
+Action: GetDuplicateMeldingen
+Action Input: De gras in Erasmuspark is te hoog, het is gevaarlijk voor mijn kindje. Kan de gemeente dat gewoon vaker snoeien?!
+
+**Option #2:**
+If you want to respond directly, respond with:
+> Final Answer: ...
+
 """
 
 AGENTIC_AI_AGENT_PROMPT_SUFFIX = """
