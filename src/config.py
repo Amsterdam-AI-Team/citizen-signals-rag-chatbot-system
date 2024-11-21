@@ -41,6 +41,8 @@ ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal Op
 
 ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
+ENDPOINT_BAG = "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatie/bagadresinformatie/"
+
 model_dict = {"ChatGPT 4o": "gpt-4o"}
 summarize_melding_for_policy_retrieval = False # set to True if you wish to summarize melding for policy retrieval
 
