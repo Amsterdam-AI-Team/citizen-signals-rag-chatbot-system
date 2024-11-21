@@ -164,18 +164,6 @@ class MeldingProcessor:
         self.melding_attributes['INITIAL_RESPONSE'] = completion.choices[0].message.content
 
 
-    # def _build_address_prompt(self):
-    #     """
-    #     Build a prompt to request missing address information from the user.
-    #     """
-    #     if not self.melding_attributes.get('STRAATNAAM'):
-    #         return "Kan je me de straatnaam geven waar je het probleem ervaart?"
-    #     if not self.melding_attributes.get('HUISNUMMER'):
-    #         return "Wat is het huisnummer?"
-    #     if not self.melding_attributes.get('POSTCODE'):
-    #         return "Wat is de postcode?"
-    #     return None
-
     def _build_address_prompt(self):
         """
         Build a prompt to request missing address information from the user.
@@ -200,9 +188,6 @@ class MeldingProcessor:
             'HUISNUMMER': self.melding_attributes.get('HUISNUMMER', ''),
             'POSTCODE': self.melding_attributes.get('POSTCODE', '')
         }
-
-        print(f"Het address is\n {self.melding_attributes['ADDRESS']}")
-
 
     def _melding_requires_license_plate(self):
         """
