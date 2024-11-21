@@ -8,11 +8,14 @@ from langchain_core.prompts import ChatPromptTemplate
 from helpers.melding_helpers import (
     get_melding_attributes, 
     generate_image_caption,
-    add_chat_response
+    add_chat_response,
+    get_additional_address_info,
+    check_postcode_format
 )
 
 import config as cfg
 import my_secrets
+import re
 
 # Environment setup
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -161,22 +164,26 @@ class MeldingProcessor:
 
         self.melding_attributes['INITIAL_RESPONSE'] = completion.choices[0].message.content
 
+
     def _build_address_prompt(self):
         """
         Build a prompt to request missing address information from the user.
         """
-        if not self.melding_attributes.get('STRAATNAAM'):
-            return "Kan je me de straatnaam geven waar je het probleem ervaart?"
-        if not self.melding_attributes.get('HUISNUMMER'):
-            return "Wat is het huisnummer?"
-        if not self.melding_attributes.get('POSTCODE'):
-            return "Wat is de postcode?"
+        if self.melding_attributes.get('POSTCODE') and not self.melding_attributes.get('HUISNUMMER'):
+            return "Bedankt voor de postcode, wat is het huisnummer?"
+        if self.melding_attributes.get('HUISNUMMER') and not self.melding_attributes.get('POSTCODE'):
+            return "Bedankt voor het huisnummer, wat is de postcode (in format 9999XX)?"
+        if not self.melding_attributes.get('POSTCODE') or not self.melding_attributes.get('HUISNUMMER'):
+            return "Kan je me de postcode (in format 9999XX) en het huisnummer geven van het adres waar je het probleem ervaart?"
         return None
 
     def _generate_address(self):
         """
         Generate a complete address for the melding using available attributes.
         """
+        self.melding_attributes['STRAATNAAM'] = get_additional_address_info(self)
+        self.melding_attributes['HUISNUMMER'] = re.match(r'^\d+', self.melding_attributes.get('HUISNUMMER', '')).group()
+
         self.melding_attributes['ADDRESS'] = {
             'STRAATNAAM': self.melding_attributes.get('STRAATNAAM', ''),
             'HUISNUMMER': self.melding_attributes.get('HUISNUMMER', ''),
