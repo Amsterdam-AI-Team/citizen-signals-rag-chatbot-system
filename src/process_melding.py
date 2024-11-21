@@ -9,7 +9,8 @@ from helpers.melding_helpers import (
     get_melding_attributes, 
     generate_image_caption,
     add_chat_response,
-    get_additional_address_info
+    get_additional_address_info,
+    check_postcode_format
 )
 
 import config as cfg
@@ -171,9 +172,9 @@ class MeldingProcessor:
         if self.melding_attributes.get('POSTCODE') and not self.melding_attributes.get('HUISNUMMER'):
             return "Bedankt voor de postcode, wat is het huisnummer?"
         if self.melding_attributes.get('HUISNUMMER') and not self.melding_attributes.get('POSTCODE'):
-            return "Bedankt voor het huisnummer, wat is de postcode?"
+            return "Bedankt voor het huisnummer, wat is de postcode (in format 9999XX)?"
         if not self.melding_attributes.get('POSTCODE') or not self.melding_attributes.get('HUISNUMMER'):
-            return "Kan je me de postcode en het huisnummer geven van het adres waar je het probleem ervaart?"
+            return "Kan je me de postcode (in format 9999XX) en het huisnummer geven van het adres waar je het probleem ervaart?"
         return None
 
     def _generate_address(self):
