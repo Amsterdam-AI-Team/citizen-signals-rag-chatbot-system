@@ -119,19 +119,19 @@ class CentralAgent:
                 ),
             ),
             Tool(
-                name="GetDuplicateMeldingen",
+                name="GetCloseByReports",
                 func=partial(self.get_duplicate_meldingen),
                 description=(
-                    "Always use this tool to obtain a list of possibly duplicate meldingen"
-                    "for a melding in the format 'MELDING'"# and an address in the format 'STRAATNAAM HUISNUMMER, POSTCODE"
-                    "which might indicate that the issue is already known and should not be reported again"
+                    "Use this tool to obtain a list of close-by reports (meldingen) which are possible duplicates"
+                    "of a given report in the format 'MELDING'."# and an address in the format 'STRAATNAAM HUISNUMMER, POSTCODE"
+                    "Such reports might indicate that the issue is already known and should not be reported again"
                 ),
             ),
             Tool(
-                name="GetSimilarMeldingen",
+                name="GetSimilarReports",
                 func=partial(self.get_similar_meldingen),
                 description=(
-                    "Use this tool to obtain a list of possibly similar meldingen together with their responses"
+                    "Use this tool to obtain a list of possibly similar reports (meldingen) together with their responses"
                     "to understand how similar cases from different locations were previously solved"
                 ),
             ),
@@ -465,11 +465,23 @@ if __name__ == "__main__":
         # "POSTCODE": "1074HP",
         # "LICENSE_PLATE_NEEDED": False,
 
-        "MELDING": "Graffiti op Admiralengracht",
-        "STRAATNAAM": "Admiralengracht",
-        "HUISNUMMER": "107",
-        "POSTCODE": "1057VN",
-        "LICENSE_PLATE_NEEDED": False,
+        # "MELDING": "Graffiti op Admiralengracht",
+        # "STRAATNAAM": "Admiralengracht",
+        # "HUISNUMMER": "107",
+        # "POSTCODE": "1057VN",
+        # "LICENSE_PLATE_NEEDED": False,
+
+        # "MELDING": "grofvuil op de stoep",
+        # "STRAATNAAM": "Tweede Kostverlorenkade",
+        # "HUISNUMMER": "67",
+        # "POSTCODE": "1053SB",
+        # "LICENSE_PLATE_NEEDED": False,
+
+        # "MELDING": "Er zijn weer schreeuwende jongeren op het Balboaplein. Ze zijn weer met vuurwerk aan het spelen.",
+        # "STRAATNAAM": "Balboaplein",
+        # "HUISNUMMER": "1",
+        # "POSTCODE": "1057ET",
+        # "LICENSE_PLATE_NEEDED": False,        
     }
 
     from helpers.llm_helpers import LLMRouter
