@@ -415,7 +415,7 @@ if __name__ == "__main__":
 
     if cfg.track_emissions:
         tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
-        co2_signal_api_token = sc.API_KEYS['co2-signal'])
+        co2_signal_api_token = sc.CO2_SIGNAL_KEY)
         tracker.start()
 
 
