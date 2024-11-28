@@ -35,7 +35,7 @@ LLM = LLMRouter.get_model(
     api_key=sc.API_KEY,
     api_version=cfg.AZURE_GPT_API_VERSION,
     hf_token=sc.HF_TOKEN,
-    hf_cache=cfg.HF_CACHE,
+    hf_cache=cfg.HUGGING_CACHE,
     params=cfg.params,
 )
 

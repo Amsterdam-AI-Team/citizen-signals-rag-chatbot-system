@@ -40,7 +40,7 @@ def llama_prompt(prompt, context=None, system=""):
         instruction = USING_CONTEXT.format(context=context, prompt=prompt)
         formatted_prompt = f"<s>[INST] {system_msg} {instruction} [/INST]"
     else:
-        # system_msg = f"<<SYS>> {DEFAULT_INTRO} {system} <</SYS>>"
+        system_msg = f"<<SYS>> {DEFAULT_INTRO} {system} <</SYS>>"
         formatted_prompt = f"<s>[INST] {system_msg} {prompt} [/INST]"
     return formatted_prompt
 

@@ -7,7 +7,7 @@ from langchain_community.vectorstores import Chroma
 from openai import OpenAI, AzureOpenAI
 
 import config as cfg
-import my_secrets
+import my_secrets as sc
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
 
 # Environment setup
@@ -15,7 +15,8 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 class PolicyRetrieverTool:
 
-    def __init__(self, melding):
+    def __init__(self, LLM, melding):
+        self.llm = LLM
         self.melding = melding
         if cfg.summarize_melding_for_policy_retrieval:
             self.melding = self.summarize_melding()
@@ -86,25 +87,9 @@ class PolicyRetrieverTool:
             str: The generated response from the language model.
         """
         system_content = "Je bent een behulpzame assistent" if summarize else "Je bent een behulpzame ambtenaar."
+        response = self.llm.prompt(prompt=prompt, system=system_content)
 
-        if cfg.ENDPOINT == 'local':
-            client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
-        elif cfg.ENDPOINT == 'azure':
-            client = AzureOpenAI(
-                azure_endpoint=cfg.ENDPOINT_AZURE, 
-                api_key=my_secrets.API_KEYS["openai_azure"],  
-                api_version="2024-02-15-preview"
-            )
-
-        completion = client.chat.completions.create(
-            model='gpt-4o-mini',
-            messages=[
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": prompt}
-            ]
-        )
-
-        return completion.choices[0].message.content
+        return response
 
     def format_response(self, response_text, sources):
         """
@@ -121,11 +106,25 @@ class PolicyRetrieverTool:
         return formatted_response
 
 if __name__ == '__main__':
+
+    from helpers.llm_helpers import LLMRouter
+
+    LLM = LLMRouter.get_model(
+        provider=cfg.provider,
+        model_name=cfg.model_name,
+        api_endpoint=cfg.AZURE_OPENAI_ENDPOINT,
+        api_key=sc.API_KEY,
+        api_version=cfg.AZURE_GPT_API_VERSION,
+        hf_token=sc.HF_TOKEN,
+        hf_cache=cfg.HUGGING_CACHE,
+        params=cfg.params,
+    )
+
     # Specify the melding
     melding = 'Er ligt grofvuil naast een container bij mij in de straat.'
 
     # Instantiate the PolicyRetrieverTool class with the melding
-    fetcher = PolicyRetrieverTool(melding)
+    fetcher = PolicyRetrieverTool(LLM, melding)
 
     # Retrieve policy
     policy = fetcher.retrieve_policy()
