@@ -30,7 +30,7 @@ class MeldingProcessor:
     including identifying intents and extracting entities
     """
 
-    def __init__(self, melding, LLM, base64_image=None, chat_history=None, melding_attributes=None):
+    def __init__(self, melding, llm, base64_image=None, chat_history=None, melding_attributes=None):
         """
         Initialize the MeldingProcessor with the melding text, model name, and optional attributes.
         """
@@ -38,7 +38,7 @@ class MeldingProcessor:
         self.base64_image = base64_image
         self.chat_history = chat_history or []
         self.melding_attributes = melding_attributes or {}
-        self.LLM = LLM
+        self.llm = llm
 
 
     def process_melding(self):
@@ -57,7 +57,7 @@ class MeldingProcessor:
                 extracted_attributes = get_melding_attributes(
                     self.melding_attributes['IMAGE_CAPTION'], 
                     'LICENSE_PLATE',
-                    self.LLM,
+                    self.llm,
                     self.chat_history
                 )
                 if extracted_attributes:
@@ -65,7 +65,7 @@ class MeldingProcessor:
 
         # Step 2: Establish that melding is clear and has enough information to process it
         if not self.melding_attributes.get('TYPE'):
-            extracted_attributes = get_melding_attributes(self.melding, 'TYPE', self.LLM, self.chat_history)
+            extracted_attributes = get_melding_attributes(self.melding, 'TYPE', self.llm, self.chat_history)
             if extracted_attributes:
                 self.melding_attributes.update(extracted_attributes)
                 self.melding_attributes['MELDING'] = self.melding
@@ -88,7 +88,7 @@ class MeldingProcessor:
 
         # Step 4: Obtain address details from chat history
         if not self.melding_attributes.get('ADDRESS'):
-            extracted_attributes = get_melding_attributes(self.melding, 'ADDRESS', self.LLM, self.chat_history)
+            extracted_attributes = get_melding_attributes(self.melding, 'ADDRESS', self.llm, self.chat_history)
             if extracted_attributes:
                 self.melding_attributes.update(extracted_attributes)
 
@@ -107,7 +107,7 @@ class MeldingProcessor:
         if self._melding_requires_license_plate():
             if not self.melding_attributes.get('LICENSE_PLATE'):
                 # Attempt to extract from melding if not already done
-                extracted_attributes = get_melding_attributes(self.melding, 'LICENSE_PLATE', self.LLM, self.chat_history)
+                extracted_attributes = get_melding_attributes(self.melding, 'LICENSE_PLATE', self.llm, self.chat_history)
                 if extracted_attributes:
                     self.melding_attributes.update(extracted_attributes)
                 else:
@@ -121,7 +121,7 @@ class MeldingProcessor:
             response.append("We gaan nu zoeken in onze interne documenten of we je behulpzame informatie kunnen geven die je melding nu al kan oplossen.")
 
             # Delegate to CentralAgent to build and execute agentic AI plan
-            central_agent = CentralAgent(self.LLM, self.melding_attributes, self.chat_history)
+            central_agent = CentralAgent(self.llm, self.melding_attributes, self.chat_history)
             central_agent.build_and_execute_plan()
             self.melding_attributes = central_agent.melding_attributes
 
@@ -146,11 +146,9 @@ class MeldingProcessor:
             type=self.melding_attributes['TYPE']
         )
 
-        self.melding_attributes['INITIAL_RESPONSE'] = self.LLM.prompt(
+        self.melding_attributes['INITIAL_RESPONSE'] = self.llm.prompt(
             prompt=prompt, system=cfg.SYSTEM_CONTENT_INITIAL_RESPONSE,
         )
-
-        self.melding_attributes['INITIAL_RESPONSE'] = completion.choices[0].message.content
 
 
     def _build_address_prompt(self):
@@ -189,7 +187,7 @@ class MeldingProcessor:
         prompt = f"Is het voor de volgende melding nodig om het kenteken van een voertuig te hebben om de melding te verwerken? Melding: \
             '{self.melding_attributes['MELDING']}'. Antwoord met 'ja' of 'nee'"
 
-        licence_plate_needed = self.LLM.prompt(
+        licence_plate_needed = self.llm.prompt(
             prompt=prompt,
             system="Je bent een assistent die bepaalt of een kenteken nodig is om een melding te verwerken.",
         ).strip().lower()

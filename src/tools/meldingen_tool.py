@@ -2,6 +2,9 @@
 Implementation of a meldingen retrieval tool.
 The tool is used by the central agent to retrieve duplicate or similar meldingen.
 """
+import sys
+sys.path.append("..")
+
 import logging
 import os
 import pickle
@@ -16,8 +19,9 @@ from pyproj import Transformer
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 from shapely.geometry import Point
-from codecarbon import EmissionsTracker
 import config as cfg
+
+from codecarbon import EmissionsTracker
 
 
 class MeldingenRetrieverTool:
@@ -206,18 +210,14 @@ def get_lat_lon_from_address(address):
 if __name__ == "__main__":
     logging.basicConfig(level="INFO")
 
-    # TODO: import all from cfg
-    HUGGING_CACHE = "/home/azureuser/cloudfiles/code//hugging_cache"
-    os.environ["TRANSFORMERS_CACHE"] = HUGGING_CACHE
-    os.environ["HF_HOME"] = HUGGING_CACHE
+    tracker = EmissionsTracker(log_level="INFO")
+    tracker.start()
 
-    meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
-    meldingen_out_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/processed_data/"
-    source = "20240821_meldingen_results_prod"
-    meldingen_path = f"{meldingen_in_folder}/{source}.csv"
-    index_folder = f"{meldingen_out_folder}/indices"
+    os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
+    os.environ["HF_HOME"] = cfg.HUGGING_CACHE
 
-    model_name = "intfloat/multilingual-e5-large"
+    model_name = cfg.embedding_model_name
+    # model_name = "intfloat/multilingual-e5-large"
     # model_name = "zeta-alpha-ai/Zeta-Alpha-E5-Mistral"
     # model_name = "jegormeister/bert-base-dutch-cased-snli"
     # model_name = "GroNLP/bert-base-dutch-cased"
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     address = "Admiralengracht 100, 1057ET"  # Replace with your desired address
 
     # Instantiate the MeldingenRetrieverTool class with the address
-    retriever = MeldingenRetrieverTool(model_name, meldingen_path, index_folder)
+    retriever = MeldingenRetrieverTool(model_name, cfg.meldingen_dump, cfg.index_storage_folder)
 
     # Select/Write a melding
     melding = "vuilnis ligt er al dagen"
@@ -243,3 +243,5 @@ if __name__ == "__main__":
     print("===== Without an address =====")
     similar = retriever.retrieve_meldingen(melding, top_k=10)
     pprint(list(enumerate(similar)))
+
+    tracker.stop()

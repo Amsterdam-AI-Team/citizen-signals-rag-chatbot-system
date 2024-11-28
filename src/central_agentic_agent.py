@@ -70,7 +70,7 @@ class CentralAgent:
         self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
         self.AddressOwnerTool = AddressOwnerTool(straatnaam, huisnummer)
         self.NoisePermitsTool = NoisePermitsTool(straatnaam, huisnummer, postcode, melding)
-        self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
+        self.PolicyRetrieverTool = PolicyRetrieverTool(self.llm, melding)
         if self.melding_attributes['LICENSE_PLATE_NEEDED'] == True:
             license_plate = self.melding_attributes['LICENSE_PLATE']
             if license_plate:
@@ -481,7 +481,7 @@ if __name__ == "__main__":
         # "STRAATNAAM": "Balboaplein",
         # "HUISNUMMER": "1",
         # "POSTCODE": "1057ET",
-        # "LICENSE_PLATE_NEEDED": False,        
+        # "LICENSE_PLATE_NEEDED": False,
     }
 
     from helpers.llm_helpers import LLMRouter

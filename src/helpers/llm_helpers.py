@@ -12,8 +12,8 @@ sys.path.append("..")
 from abc import ABC, abstractmethod
 
 import torch
-from .llm_config import MODEL_MAPPING
-from .llm_templates import format_prompt
+from helpers.llm_config import MODEL_MAPPING
+from helpers.llm_templates import format_prompt
 from openai import AzureOpenAI
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import StoppingCriteria, StoppingCriteriaList
