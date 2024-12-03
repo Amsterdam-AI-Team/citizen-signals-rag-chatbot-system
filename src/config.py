@@ -1,494 +1,293 @@
-import logging
-from functools import partial
-from typing import Optional
-from datetime import datetime
-import os
-
-import config as cfg
-import my_secrets
-from tools.bgt_features_tool import BGTTool
-from tools.waste_collection_tool import WasteCollectionTool
-from tools.policy_retriever_tool import PolicyRetrieverTool
-from tools.license_plate_permit_tool import LicensePlatePermitTool
-from tools.meldingen_tool import MeldingenRetrieverTool
-from tools.noise_permits_tool import NoisePermitsTool
-from tools.address_owner_tool import AddressOwnerTool
-from helpers.melding_helpers import get_formatted_chat_history
-from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
-from langchain.chains import LLMChain
-from langchain.memory import ConversationBufferMemory
-from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
-from codecarbon import EmissionsTracker
-
-class CentralAgent:
-    """
-    An improved agent that builds and executes AI-driven plans to retrieve useful information and generate 
-    tailored responses to resolve a 'melding' (incident or issue) before escalating it into the system.
-    """
-
-    def __init__(
-        self,
-        melding_attributes: Optional[dict] = None,
-        chat_history: Optional[list] = None,
-    ):
-        """
-        Initialize the CentralAgent with the required attributes to handle the melding.
-
-        Args:
-            melding_attributes (dict, optional): Additional attributes related to the melding.
-            chat_history (list, optional): List of previous chat messages with the user.
-        """
-        self.melding_attributes = melding_attributes or {}
-        self.chat_history = chat_history or []
-        self.memory = ConversationBufferMemory(memory_key="chat_history", 
-                                               input_key="melding", return_messages=True)
-
-        # Initialize the language model
-        self.llm = self.initialize_llm()
-
-        # Define the tools available to the agent
-        self.tools = self.initialize_tools()
-
-        # Initialize the agent
-        self.agent_executor = self.initialize_agent_executor()
-
-    def initialize_llm(self):
-        """
-        Initialize the language model based on the configuration.
-        """
-        if cfg.ENDPOINT == 'local':
-            llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=my_secrets.API_KEYS["openai"], 
-                temperature=0
-            )
-        elif cfg.ENDPOINT == 'azure':
-            llm = AzureChatOpenAI(
-                deployment_name='gpt-4o',
-                model_name='gpt-4o',
-                azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=my_secrets.API_KEYS["openai_azure"],
-                api_version="2024-02-15-preview",
-                temperature=0,
-            )
-        print(f"The OpenAI LLM is using model: {llm.model_name}")
-        return llm
-
-    def initialize_tools(self):
-        """
-        Initialize the tools available to the agent.
-        """
-        melding = self.melding_attributes['MELDING']
-        straatnaam = self.melding_attributes['STRAATNAAM']
-        huisnummer = self.melding_attributes['HUISNUMMER']
-        postcode = self.melding_attributes['POSTCODE']
-        not_allowed_tools = []
-
-        os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
-        os.environ["HF_HOME"] = cfg.HUGGING_CACHE
-
-        self.WasteCollectionTool = WasteCollectionTool(straatnaam, huisnummer, postcode)
-        self.BGTTool = BGTTool(straatnaam, huisnummer, postcode)
-        self.AddressOwnerTool = AddressOwnerTool(straatnaam, huisnummer)
-        self.NoisePermitsTool = NoisePermitsTool(straatnaam, huisnummer, postcode, melding)
-        self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
-        if self.melding_attributes['LICENSE_PLATE_NEEDED'] == True:
-            license_plate = self.melding_attributes['LICENSE_PLATE']
-            if license_plate:
-                self.LicensePlatePermitTool = LicensePlatePermitTool(license_plate)
-            else:
-                not_allowed_tools.append('GetLicensePlatePermitInfo')
-                logging.warning("LICENSE_PLATE_NEEDED is True but LICENSE_PLATE is missing.")
-        else:
-            not_allowed_tools.append('GetLicensePlatePermitInfo')
-
-        self.MeldingenRetrieverTool = MeldingenRetrieverTool(
-            cfg.embedding_model_name, cfg.meldingen_dump, cfg.index_storage_folder)
-
-        tools = [
-            Tool(
-                name="GetWasteCollectionInfo",
-                func=partial(self.get_waste_collection_info),
-                description=(
-                    "Use this tool to get waste collection information given an address "
-                    "in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'. Returns 'No information found' if unsuccessful."
-                ),
-            ),
-            Tool(
-                name="GetBGTInfo",
-                func=partial(self.get_bgt_info),
-                description=(
-                    "Use this tool to get the BGT function of a given address, in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'."
-                    "Returns 'No information found' if unsuccessful."
-                ),
-            ),
-            Tool(
-                name="GetAddressOwnerInfo",
-                func=partial(self.get_address_owner_info),
-                description=(
-                    "Use this tool to get the owner of a given address, in the format 'STRAATNAAM, HUISNUMMER'."
-                    "The function can indicate the jurisdiction of issues concerning that address."
-                    "Returns 'No information found' if unsuccessful."
-                ),
-            ),
-            Tool(
-                name="GetPolicyInfo",
-                func=partial(self.get_policy_info),
-                description=(
-                    "Use this tool to obtain policy information from the municipality website that is related to the melding "
-                    "in the format 'MELDING'. Returns 'No information found' if unsuccessful."
-                ),
-            ),
-            Tool(
-                name="GetDuplicateMeldingen",
-                func=partial(self.get_duplicate_meldingen),
-                description=(
-                    "Always use this tool to obtain a list of possibly duplicate meldingen"
-                    "for a melding in the format 'MELDING'"# and an address in the format 'STRAATNAAM HUISNUMMER, POSTCODE"
-                    "which might indicate that the issue is already known and should not be reported again"
-                ),
-            ),
-            Tool(
-                name="GetSimilarMeldingen",
-                func=partial(self.get_similar_meldingen),
-                description=(
-                    "Use this tool to obtain a list of possibly similar meldingen together with their responses"
-                    "to understand how similar cases from different locations were previously solved"
-                ),
-            ),
-            Tool(
-                name="GetLicensePlatePermitInfo",
-                func=partial(self.get_license_plate_info),
-                description=(
-                    "If the report is about a wrongly parked car, always use this tool to find out whether a permit is"
-                    "linked to the license plate (in the format 'LICENSE_PLATE') of that car."
-                    "For example, that could a when a car is parked on the pavement "
-                    " Returns 'No information found' if unsuccessful."
-                ),
-            ),
-            Tool(
-                name="GetPermitInfo",
-                func=partial(self.get_noise_permit),
-                description=("Use this tool find permits, for example for an event or that permit noise in a certain area for a certain period."
-                            "A permit can indicate that for example an event is permitted or the noise from a complaint might be due to permitted noise."
-                            "Returns 'No matching permit found.' if unsuccessful."
-                ),
-            )
-        ]
-
-        # Remove non-allowed tools
-        tools = [tool for tool in tools if tool.name not in not_allowed_tools]
-        return tools
-    
-    def initialize_agent_executor(self):
-        """
-        Initialize the agent executor with the specified tools and LLM.
-        """
-        prompt = self.create_custom_prompt()
-        llm_chain = LLMChain(llm=self.llm, prompt=prompt)
-
-        # Initialize the agent with only the allowed tools
-        agent = ZeroShotAgent(llm_chain=llm_chain, tools=self.tools)
-
-        # Initialize the agent executor with the allowed tools
-        agent_executor = AgentExecutor.from_agent_and_tools(
-            agent=agent,
-            tools=self.tools,
-            memory=self.memory,
-            verbose=True,
-            handle_parsing_errors="Check your output and make sure it conforms."
-        )
-        return agent_executor
-
-    def create_custom_prompt(self):
-        """
-        Create a custom prompt template for the agent using ZeroShotAgent.create_prompt.
-        """
-        prompt = ZeroShotAgent.create_prompt(
-            tools=self.tools,
-            prefix=cfg.AGENTIC_AI_AGENT_PROMPT_PREFIX,
-            suffix=cfg.AGENTIC_AI_AGENT_PROMPT_SUFFIX,
-            format_instructions=cfg.AGENTIC_AI_AGENT_PROMPT_FORMAT_INSTRUCTIONS,
-        )
-        return prompt
-
-    def build_and_execute_plan(self):
-        """
-        Build and execute an AI-driven plan to resolve the melding.
-
-        This method orchestrates the plan-building process and then executes the plan to address the melding.
-        """
-        logging.info("Building and executing plan to solve melding...")
-
-        # Prepare the input prompt variables for the agent
-        melding_text = self.melding_attributes.get('MELDING', '')
-        formatted_chat_history = get_formatted_chat_history(self.chat_history)
-        melding_handling_guidelines = cfg.MELDING_HANDLING_GUIDELINES # This option allows for easy change of guidelines in config file
-        # melding_handling_guidelines = open(os.path.join(cfg.MELDING_HANDLING_GUIDELINES_PATH, # this option for final repository
-        #                                                     cfg.MELDING_HANDLING_GUIDELINES_FILE), 'r').read()
-
-        inputs = {
-            "melding": melding_text,
-            "chat_history": formatted_chat_history,
-            "date_time": self.get_date_time(),
-            "melding_handling_guidelines": melding_handling_guidelines
-        }
-
-        # Run the agent with the input prompt
-        try:
-            response = self.agent_executor.invoke(inputs)['output']
-            # Store the response in melding_attributes
-            self.melding_attributes['AGENTIC_INFORMATION'] = response
-        except Exception as e:
-            logging.error(f"An error occurred: {e}")
-            # Handle the failure accordingly
-            self.melding_attributes['AGENTIC_INFORMATION'] = (
-                "No useful information was found. Your melding will be escalated in the system."
-            )
-
-    def get_waste_collection_info(self, address: str) -> str:
-        """
-        Retrieve waste collection information based on the provided address.
-
-        Args:
-            address (str): The address in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'.
-
-        Returns:
-            str: Waste collection information or 'No information found' if unsuccessful.
-        """
-        logging.info(f"Retrieving waste collection info for address: {address}")
-        try:
-            waste_collection_info = self.WasteCollectionTool.get_collection_times()
-            if not waste_collection_info:
-                return "No information found"
-            return waste_collection_info
-        except Exception as e:
-            logging.error(f"Failed to get waste collection info: {e}")
-            return "No information found"
-
-    def get_bgt_info(self, address: str) -> str:
-        """
-        Retrieve BGT (Basisregistratie Grootschalige Topografie) information based on the provided address.
-
-        Args:
-            address (str): The address in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'.
-
-        Returns:
-            str: BGT information or 'No information found' if unsuccessful.
-        """
-        logging.info(f"Retrieving BGT info for address: {address}")
-        try:
-            gdf_bgt_info = self.BGTTool.get_bgt_features_at_coordinate()
-            if gdf_bgt_info is not None and not gdf_bgt_info.empty:
-                return self.BGTTool.get_functie_from_gdf(gdf_bgt_info)
-            else:
-                return "No information found"
-        except Exception as e:
-            logging.error(f"Failed to get BGT info: {e}")
-            return "No information found"
-        
-    def get_address_owner_info(self, street: str) -> str:
-        """
-        Retrieve BGT (Basisregistratie Grootschalige Topografie) information based on the provided address.
-
-        Args:
-            address (str): The address in the format 'STRAATNAAM, HUISNUMMER, POSTCODE'.
-
-        Returns:
-            str: BGT information or 'No information found' if unsuccessful.
-        """
-        logging.info(f"Retrieving BGT info for address: {street}")
-        try:
-            return self.AddressOwnerTool.get_owner()
-        except Exception as e:
-            logging.error(f"Failed to get BGT info: {e}")
-            return "No information found"
-        
-    def get_policy_info(self, melding: str) -> str:
-        """
-        Retrieve policy information from the website based on the provided melding.
-
-        Args:
-            melding (str): The melding done by the melder.
-
-        Returns:
-            str: Policy information or 'No information found' if unsuccessful.
-        """
-        logging.info(f"Retrieving policy info for melding: {melding}")
-        try:
-            policy_info = self.PolicyRetrieverTool.retrieve_policy()
-            if not policy_info:
-                return "No information found"
-            return policy_info
-        except Exception as e:
-            logging.error(f"Failed to get policy info: {e}")
-            return "No information found"
-
-    def get_license_plate_info(self, license_plate: str) -> str:
-        """
-        Retrieve permit information based on the provided license plate.
-
-        Args:
-            license_plate (str): The license plate number.
-
-        Returns:
-            str: License plate permit information or 'No information found' if unsuccessful.
-        """
-        logging.info(f"Retrieving permit info for license plate: {license_plate}")
-        try:
-            license_plate_info = self.LicensePlatePermitTool.has_permit()
-            if not license_plate_info:
-                return "No information found"
-            return license_plate_info
-        except Exception as e:
-            logging.error(f"Failed to get license plate permit info: {e}")
-            return "No information found"
-
-    def get_duplicate_meldingen(self, melding: str) -> list[str]:
-        """
-        Retrieve (possibly) duplicate meldingen
-
-        Args:
-            melding (str): The melding.
-            address (str): The address in the format 'STRAATNAAM HUISNUMMER, POSTCODE'.
-
-        Returns:
-            [str]: a list of possible duplicates in the neighborhood.
-        """
-        logging.info(f"Retrieving duplicates of melding: {melding}")
-
-        try:
-            straatnaam = self.melding_attributes['STRAATNAAM']
-            huisnummer = self.melding_attributes['HUISNUMMER']
-            postcode = self.melding_attributes['POSTCODE']
-            address = f"{straatnaam} {huisnummer}, {postcode}"
-            melding = self.melding_attributes['MELDING']
-
-            return self.MeldingenRetrieverTool.retrieve_meldingen(melding, address=address, top_k=5)
-
-        except Exception as e:
-            logging.error(f"Failed to retrieve relevant info: {e}")
-            return "No information found"
-
-
-    def get_similar_meldingen(self, melding: str) -> list[str]:
-        """
-        Retrieve related meldingen
-
-        Args:
-            melding (str): The melding.
-            address (str): The address in the format 'STRAATNAAM HUISNUMMER, POSTCODE'.
-
-        Returns:
-            [str]: a list of relevant meldingen together with examples answers.
-        """
-
-        logging.info(f"Retrieving duplicates of melding: {melding}")
-
-        try:
-            melding = self.melding_attributes['MELDING']
-            return self.MeldingenRetrieverTool.retrieve_meldingen(melding, top_k=5)
-
-        except Exception as e:
-            logging.error(f"Failed to retrieve relevant info: {e}")
-            return "No information found"
-
-    def get_noise_permit(self, melding: str) -> list[str]:
-        """
-        Retrieve noise permit.
-
-        Args:
-            melding (str): The melding.
-            address (str): The address in the format 'STRAATNAAM HUISNUMMER, POSTCODE'.
-
-        Returns:
-            [str]: the permit text and some metadata distilled from the permit text
-        """
-
-        logging.info(f"Retrieving noise permit of: {melding}")
-
-        logging.info(f"Retrieving policy info for melding: {melding}")
-
-        try:
-            permit_text = self.NoisePermitsTool.handle_melding(melding)
-            if not permit_text:
-                return "No information found"
-            return permit_text
-        except Exception as e:
-            logging.error(f"Failed to get noise permit: {e}")
-            return "No information found"
-
-    def get_date_time(self) -> str:
-        """
-        Retrieve the current date and time in the specified format.
-        
-        Returns:
-            str: Current date and time in the format "Wednesday 15 October 2024 18:45".
-        """
-        logging.info("Retrieving current date and time")
-        return datetime.now().strftime("%A %d %B %Y %H:%M")
-
-
-# Example usage:
-if __name__ == "__main__":
-
-    if cfg.track_emissions:
-        tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
-        co2_signal_api_token = my_secrets.API_KEYS['co2-signal'])
-        tracker.start()
-
-    melding_attributes = {
-
-        # Example melding 1 (garbage collection)
-        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
-        "STRAATNAAM": "Keizersgracht",
-        "HUISNUMMER": "75",
-        "POSTCODE": "1015CE",
-        "LICENSE_PLATE_NEEDED": False,
-
-        # Example melding 2 (parking permit)
-        # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
-        # "STRAATNAAM": "Keizersgracht",
-        # "HUISNUMMER": "75",
-        # "POSTCODE": "1015CE",
-        # "LICENSE_PLATE_NEEDED": True,
-        # "LICENSE_PLATE": "DC-743-SK"
-    
-        # Example melding 3 (noise permit)
-        # "MELDING": "Er is erg veel lawaai van bouwwerkzaamheden bij station zuid, ook op zondag.",
-        # "STRAATNAAM": "Zuidplein",
-        # "HUISNUMMER": "136",
-        # "POSTCODE": "1077XV",
-        # "LICENSE_PLATE_NEEDED": False,
-
-        # Example melding 4 (responsibility other party)
-        # "MELDING": "Er ligt een gewonde duif op straat",
-        # "STRAATNAAM": "Ertskade",
-        # "HUISNUMMER": "164",
-        # "POSTCODE": "1019BB",
-        # "LICENSE_PLATE_NEEDED": False,
-
-        # Example melding 5 (duplicate melding)
-        # "MELDING": "Zwervers voor de Albert Heijn, klanten worden bang.",
-        # "STRAATNAAM": "Wibautstraat",
-        # "HUISNUMMER": "80",
-        # "POSTCODE": "1091GP",
-        # "LICENSE_PLATE_NEEDED": False,
-
-        # Example melding 7 (policy)
-        # "MELDING": "Mijn fiets is onterecht weggehaald, ik had hem 8 weken bij mij voor de deur staan. \
-        # Nu moest ik geld betalen om hem op te halen. Ik wil dit geld terug.",
-        # "STRAATNAAM": "Amsteldijk",
-        # "HUISNUMMER": "10",
-        # "POSTCODE": "1074HP",
-        # "LICENSE_PLATE_NEEDED": False,
-
-    }
-
-    agent = CentralAgent(
-        chat_history=[],
-        melding_attributes=melding_attributes,
-    )
-    agent.build_and_execute_plan()
-
-    if cfg.track_emissions:
-        tracker.stop()
+# Base path
+BASE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen'
+
+# Constants
+CHROMA_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/chroma'
+DOCUMENTS_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
+PERMITS_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_license_plates/'
+ADDRESS_OWNERS_PATH = f'{BASE_PATH}/raw_data/address_owners/'
+SESSION_FILE = "session.json"
+ATTRIBUTES_FILE = "attributes.json"
+
+HUGGING_CACHE = f"{BASE_PATH}/../hugging_cache"
+
+FAISS_NOISE_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db'
+METADATA_STORE_FILE = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
+
+MELDING_HANDLING_GUIDELINES_PATH = f'{BASE_PATH}/raw_data/melding_handling_guidelines/'
+MELDING_HANDLING_GUIDELINES_FILE = 'melding_handling_guidelines.txt'
+
+# This is the actual folder with noise permit data
+noise_permits_folder = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/data'
+# This is a subset of the noise permit data, for testing/dev
+# noise_permits_folder = f'{BASE_PATH}/raw_data/permits//permits_related_to_noise_disturbance/data_sample'
+
+# Main folders
+meldingen_in_folder = f'{BASE_PATH}/raw_data'
+meldingen_out_folder = f'{BASE_PATH}/processed_data/'
+
+source = "20240821_meldingen_results_prod"
+meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
+
+index_storage_folder = f"{meldingen_out_folder}/indices"
+
+track_emissions = False # Set to True to track emissions to 
+
+embedding_model_name = "intfloat/multilingual-e5-large"
+# embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
+# embeddng_model_name = "NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers"
+
+ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
+
+ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
+
+ENDPOINT_BAG = "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatie/bagadresinformatie/"
+
+model_dict = {"ChatGPT 4o": "gpt-4o"}
+summarize_melding_for_policy_retrieval = False # set to True if you wish to summarize melding for policy retrieval
+
+SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische probleemoplosser. \
+            Je doel is om bewoners van Amsterdam te ondersteunen door begripvolle en respectvolle reacties te geven op hun meldingen en klachten. \
+                Toon altijd begrip voor de zorgen en gevoelens van de melder, en reageer op een manier die hen het gevoel geeft gehoord en serieus genomen te worden."
+
+SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION = "Je bent een behulpzame probleemoplosser. \
+            Je doel is om bewoners van Amsterdam te ondersteunen door specifieke details te extraheren uit meldingen. \
+                Reageer met de gevraagde informatie in een duidelijk gestructureerd JSON-formaat."
+
+INITIAL_MELDING_TEMPLATE = """
+--------------------
+MELDING: 
+{melding}
+
+--------------------
+TYPE MELDING: 
+{type}
+
+--------------------
+
+INSTRUCTIES:
+Schrijf een passende en empathische eerste reactie op deze MELDING. 
+Toon begrip voor de situatie en de gevoelens van de melder. Gebruik eventueel de informatie uit TYPE MELDING om de reactie relevanter te maken. 
+Houd de reactie kort en bondig, zonder aan- of afkondiging, en vermijd het noemen van eventuele vervolgstappen.
+"""
+
+MELDING_TYPE_TEMPLATE = """
+Melding: {melding}
+
+Bepaal of de melding duidelijk aangeeft wat het probleem is, en of deze concreet genoeg is om door de verantwoordelijke werknemers opgepakt te worden. 
+Losse woorden of alleen steekwoorden zijn bijvoorbeeld onvoldoende concreet.
+Als het voldoende concreet is, wijs een specifiek onderwerp toe dat het probleem beschrijft. Kies een onderwerp dat relevant is voor gemeentelijke diensten, zoals:
+- Vuilnis en afval
+- Openbare ruimte (zoals parken, trottoirs, straatmeubilair)
+- Verkeer en parkeren
+- Straatverlichting
+- Overlast (geluid, bouw, enz.)
+- Water en riolering
+
+Geef het type van de melding als een JSON-object in de volgende structuur:
+TYPE: type
+
+Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en value terug.
+"""
+
+MELDING_ADDRESS_TEMPLATE = """
+--------------------
+GESPREKSGESCHIEDENIS: 
+{history}
+
+--------------------
+MELDING: 
+{melding}
+
+--------------------
+
+INSTRUCTIES:
+Bepaal of er een adres gegevens zijn vermeld in de GESPREKSGESCHIEDENIS en/of MELDING. 
+Adres gegevens zijn: STRAATNAAM, HUISNUMMER, en POSTCODE.
+Een POSTCODE is alleen correct als het een van de volgende formatteringen heeft: AAAA11, AAAA 11.
+
+Geef gevonden adresgegevens terug als een JSON-object met de volgende velden:
+STRAATNAAM: straatnaam of leeg als niet aanwezig
+HUISNUMMER: huisnummer of leeg als niet aanwezig
+POSTCODE: postcode of leeg als niet aanwezig
+"""
+
+LICENSE_PLATE_TEMPLATE = """
+--------------------
+GESPREKSGESCHIEDENIS: 
+{history}
+
+--------------------
+MELDING: 
+{melding}
+
+--------------------
+
+INSTRUCTIES:
+Bepaal of er een kenteken nummer vermeld is in de GESPREKSGESCHIEDENIS en/of MELDING.
+
+Geef een gevonden kenteken nummer terug als een JSON-object met de volgende velden:
+LICENSE_PLATE: kenteken
+
+Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en value terug.
+"""
+
+AGENTIC_AI_AGENT_PROMPT_PREFIX = """
+You are an AI assistant tasked with helping citizens with the following incident report (melding):
+{melding}
+
+The chat history is:
+{chat_history}
+
+The current date and time is:
+{date_time}
+
+Your need to create a plan to retrieve and format information that could be shared with the melder (citizen). 
+Your goal is providing citizens with relevant information from the municipality regarding the incident report of the citizen and to do this in an empathic manner.
+If possible, you want to provide the citizen with helpful information such that they do not have to speak to an employee of the municipality. 
+
+General Policies to Follow:
+{melding_handling_guidelines}
+
+If you find useful information using the tools, provide that information in your Final Answer (in the language of the melding) while adhering to the above policies. 
+Start with "Ik heb je opmerking verzonden. Dit is wat ik je nu al kan vertellen." (in the language of the melding).
+If you cannot find any useful information, respond in your Final Answer with: "Ik heb je opmerking verzonden. Helaas heb ik geen relevante informatie gevonden om alvast met je te delen" (in the language of the melding).
+Do not thank the citizen for making a melding. Do thank them for being involved.
+
+The emphatic and concise phrasing of the Final Answer is very important, so put extra importance to this!
+"""
+
+AGENTIC_AI_AGENT_PROMPT_FORMAT_INSTRUCTIONS = """
+Use the following format:
+
+Question: the melding to be resolved
+Thought: your reasoning about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Observation can repeat N times)
+Thought: I have gathered all possible information.
+Draft: a first version of the response to the melder
+Action: re-write the draft to create a second draft that doesn't share privacy sensitive information (like names or addresses).
+Second draft: the second version of the response to the melder
+Action: re-write the second draft to make sure it acknowledges the issue that is reported and that you understand why it is an issue for the melder.
+Final Answer: the response to the melder
+"""
+
+AGENTIC_AI_AGENT_PROMPT_SUFFIX = """
+Begin!
+
+Question: {melding}
+Thought: {agent_scratchpad}
+"""
+
+SUMMARIZE_MELDING_TEMPLATE = """
+
+MELDING: {melding}
+--------------------
+
+INSTRUCTIES:
+Geef een samenvatting van de MELDING als een zoekterm.
+Geef ALLEEN deze geparafraseerde zoekterm terug.
+"""
+
+POLICY_MELDING_TEMPLATE = """
+--------------------
+DOCUMENTEN: 
+{context}
+--------------------
+
+
+MELDING: {melding}
+--------------------
+
+INSTRUCTIES:
+Kijk of er informatie in de DOCUMENTEN staat die van pas kan komen bij het oplossen van de melding.
+Dat zou bijvoorbeeld algemene informatie of beleid over het onderwerp kunnen zijn.
+Houd je antwoorden gegrond in de inhoud in de DOCUMENTEN.
+Je mag ook eventuele links meegegeven die leiden naar de webpagina waar het antwoord te vinden is.
+"""
+
+MELDING_HANDLING_GUIDELINES = """
+The phrasing instructions are as follows:
+The phrasing of the Final Answer is very important, so put extra importance to this!
+The most important thing is to be empathic, so acknowledge the issue that is reported and that you understand why it is an issue for the melder.
+Be polite, keep both individual sentences and the answer as a whole short and concise, and refrain from using difficult words.
+Only give relevant information.
+
+This is the end of the phrashing instructions.
+
+Garbage Collection
+- If the report concerns garbage beside a container or an overflowing container or anything similar, and the GetWasteCollectionInfo and current date and time confirm that \
+    collection is scheduled for the same day, inform the reporter that the garbage is likely to be collected later that day. If collection isn't scheduled \
+      until another day, inform the user that the garbage will not be picked up soon according to the regular pickup schedule, and the report will therefore \
+        be forwarded to the system for further handling.
+
+Check for Duplicate Meldingen
+- If the GetDuplicateMeldingen tool indicates that duplicates are found, let the reporter know that the issue has already been \
+    noted and is being addressed. A melding is only considered duplicate if it exactly matches an existing one.
+
+Non-Municipal Areas
+- If the GetAddressOwnerInfo tool indicates that the owner of the address is Prorail, NS or any other non-municipal organisation, inform the reporter that the issue \
+    is outside the municipality's jurisdiction and should be reported to the appropriate party. \
+        If the GetAddressOwnerInfo tool indicates that the address is within the municipality and/or its jurisdiction do not report this information to the reporter.
+
+Policy-Specific Responses
+- If the GetPolicyInfo tool highlights relevant policy regarding the issue, inform the reporter accordingly. For instance, if the report concerns \
+    a shrub partially obstructing the pavement, let them know that municipal intervention will only occur if the obstruction poses a safety hazard, as per policy. \
+
+Noise Disturbances
+- If the HandleNoiseComplaint tool returns a permit, please return structured information to the reporter about the permit in the format as is returned by the tool. \
+    Feel free to be a bit verbose, and please explain why the noise may or may not be permitted, \
+        and if anything about objection to the permit is mentioned, please return this as well. \
+
+License Plate Permits
+- If the GetLicensePlatePermitInfo returns that a car has a permit, it is allowed to park on the pavement/sidewalk \
+    If, in that case, the report is about a car that is parked on the pavement/sidewalk, please notify the reporter that this specific car is permitted to do this.\
+        Do notify them that this is only the case for shorter periods (of up to a couple of hours) and not for (for example) multiple days.
+
+General Rules
+- Always use the GetDuplicateMeldingen tool to check whether duplicate meldingen exist.
+- Always use the GetBGTInfo to check if the melding is being made on municipality's jurisdiction.
+
+Answering Rules
+- Never tell a citizen that they have to fix the problem themselves.
+- Don't mention planned actions for which there is no proof (a  mention in a previous melding is not enough proof).
+"""
+
+
+# The most important rules for the phrasing of the final answer are a set of 7 rules that all final answers should follow.
+# Before you finalize your answer you have to always rewrite your answer to make sure they follow these 7 rules.
+# Using these rules is leading and mandatory, and should overrule other formatting instruction when inconsistencies occur.
+# These rules are as follows, each followed by a short description:
+# 1. Be personal
+#     - Acknowledge the situation and experience of the melder
+#     - Show appreciation
+#     - Polite tone and not imperative
+#     - Positive formulation
+# 2. Be simple and correct
+#     - Short and active sentences
+#     - Use concrete language
+#     - No difficult words
+#     - Correct spelling and grammar
+# 3. Be specific about the situation
+#     - Mention specific conditions, such as the location or the problem
+# 4. Be complete
+#     - Clear core message
+#     - Full information
+# 5. Align with the melding
+#     - Respond to all signals mentioned in the melding
+#     - Only relevant information
+#     - React to all questions/requests
+# 6. Explain what the other options the melder has
+#     - A tip, information, or alternative solution
+# 7. Have a clear and logical structure
+#     - Logical order: introduction with core aspects request, core message, alternative or tip
+#     - Acknowledgement, appreciation included
+#     - No salutation, or gratitude
+#     - Correct sturcture and formatting
+#     - Short and concise
+
+# The 7 rules end here.
+
+# Action: re-write the second draft to a more emphatic version that will be the Final Answer. The Final Answer should acknowledges the issue that is reported and that show understanding for why it is an issue for the melder.

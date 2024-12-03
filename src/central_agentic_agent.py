@@ -230,7 +230,7 @@ class CentralAgent:
             "melding": melding_text,
             "chat_history": formatted_chat_history,
             "date_time": self.get_date_time(),
-            "melding_handling_guidelines": melding_handling_guidelines,
+            "melding_handling_guidelines": melding_handling_guidelines
         }
 
         # Run the agent with the input prompt
@@ -431,91 +431,57 @@ class CentralAgent:
 # Example usage:
 if __name__ == "__main__":
 
-    # if cfg.track_emissions:
-    #     tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
-    #     co2_signal_api_token = my_secrets.API_KEYS['co2-signal'])
-    #     tracker.start()
+    if cfg.track_emissions:
+        tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
+        co2_signal_api_token = my_secrets.API_KEYS['co2-signal'])
+        tracker.start()
 
     melding_attributes = {
 
-        # # Example melding 1 (garbage collection)
-        # "MELDING": "Er ligt restafval naast een container bij mij in de straat.",
-        # "STRAATNAAM": "Tuinstraat",
-        # "HUISNUMMER": "12",
-        # "POSTCODE": "1015PE",
-        # "LICENSE_PLATE_NEEDED": False,
+        # Example melding 1 (garbage collection)
+        "MELDING": "Er ligt afval naast een container bij mij in de straat.",
+        "STRAATNAAM": "Keizersgracht",
+        "HUISNUMMER": "75",
+        "POSTCODE": "1015CE",
+        "LICENSE_PLATE_NEEDED": False,
 
-        # # Example melding 2 (garbage collection)
-        # "MELDING": "Iemand heeft zijn bank achtergelaten naast de afvalcontainer. Dit ziet er niet mooi uit, kunnen jullie dit opruimen?",
-        # "STRAATNAAM": "Insulindeweg",
-        # "HUISNUMMER": "870",
-        # "POSTCODE": "1095DT",
-        # "LICENSE_PLATE_NEEDED": False,
-
-        # # # Example melding 3 (garbage collection)
-        # "MELDING": "De container voor afvalzakken zit vol.",
-        # "STRAATNAAM": "Tuinstraat",
-        # "HUISNUMMER": "12",
-        # "POSTCODE": "1015PE",
-        # "LICENSE_PLATE_NEEDED": False,
-
-        # Example melding 4 (nuisance youth/homeless)
-        # "MELDING": "Er zijn zwervers voor albert heijn. Onze klanten worden bang. Het gaat om het filiaal Wibautstraat 80, 1091GP.",
-        # "STRAATNAAM": "Wibautstraat",
-        # "HUISNUMMER": "80",
-        # "POSTCODE": "1091GP",
-        # "LICENSE_PLATE_NEEDED": False,
-
-    
-        # Example melding 5 (nuisance youth)
-        # "MELDING": "Er zijn weer schreeuwende jongeren op het Balboaplein. Ze zijn weer met vuurwerk aan het spelen.",
-        # "STRAATNAAM": "Balboaplein",
-        # "HUISNUMMER": "2",
-        # "POSTCODE": "1057VN",
-        # "LICENSE_PLATE_NEEDED": False,
-
-        # Example melding 6 (responsibility other party)
-        # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen? De nummerplaat is DC-743-SK",
+        # Example melding 2 (parking permit)
+        # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
         # "STRAATNAAM": "Keizersgracht",
         # "HUISNUMMER": "75",
         # "POSTCODE": "1015CE",
         # "LICENSE_PLATE_NEEDED": True,
         # "LICENSE_PLATE": "DC-743-SK"
-
-        # Example melding 7 (noise)
+    
+        # Example melding 3 (noise permit)
         # "MELDING": "Er is erg veel lawaai van bouwwerkzaamheden bij station zuid, ook op zondag.",
         # "STRAATNAAM": "Zuidplein",
         # "HUISNUMMER": "136",
         # "POSTCODE": "1077XV",
         # "LICENSE_PLATE_NEEDED": False,
 
-        # Example melding 8 (noise)
-        # "MELDING": "Bij de Molenwijk is ineens een markt waar ik last van heb vanwege de drukte.",
-        # "STRAATNAAM": "Molenwijk",
-        # "HUISNUMMER": "3",
-        # "POSTCODE": "1035EE",
+        # Example melding 4 (responsibility other party)
+        # "MELDING": "Er ligt een gewonde duif op straat",
+        # "STRAATNAAM": "Ertskade",
+        # "HUISNUMMER": "164",
+        # "POSTCODE": "1019BB",
         # "LICENSE_PLATE_NEEDED": False,
 
-        # Example melding 9 (maintenance)
-        # "MELDING": "In de hal bij centraal station voor de etos ligt een losse tegel. Ik ben er zelf bijna over gestruikeld. Kunnen jullie dit repareren?",
-        # "STRAATNAAM": "Stationsplein",
-        # "HUISNUMMER": "5",
-        # "POSTCODE": "1012AB",
+        # Example melding 5 (duplicate melding)
+        # "MELDING": "Zwervers voor de Albert Heijn, klanten worden bang.",
+        # "STRAATNAAM": "Wibautstraat",
+        # "HUISNUMMER": "80",
+        # "POSTCODE": "1091GP",
         # "LICENSE_PLATE_NEEDED": False,
 
-        # Example melding 10 (maintenance)
-        # "MELDING": "Een struik bij Egelantiersgracht 100 steekt een beetje uit over de stoep. Kunnen jullie dit snoeien?",
-        # "STRAATNAAM": "Egelantiersgracht",
-        # "HUISNUMMER": "100",
-        # "POSTCODE": "1015RR",
+        # Example melding 7 (policy)
+        # "MELDING": "Mijn fiets is onterecht weggehaald, ik had hem 8 weken bij mij voor de deur staan. \
+        # Nu moest ik geld betalen om hem op te halen. Ik wil dit geld terug.",
+        # "STRAATNAAM": "Amsteldijk",
+        # "HUISNUMMER": "10",
+        # "POSTCODE": "1074HP",
         # "LICENSE_PLATE_NEEDED": False,
 
-        # Example melding 11 (maintenance)
-        "MELDING": "Er ligt een gewonde duif op straat.",
-        "STRAATNAAM": "Ertskade",
-        "HUISNUMMER": "164",
-        "POSTCODE": "1019BB",
-        "LICENSE_PLATE_NEEDED": False,
     }
 
     agent = CentralAgent(
@@ -524,5 +490,5 @@ if __name__ == "__main__":
     )
     agent.build_and_execute_plan()
 
-    # if cfg.track_emissions:
-    #     tracker.stop()
+    if cfg.track_emissions:
+        tracker.stop()
