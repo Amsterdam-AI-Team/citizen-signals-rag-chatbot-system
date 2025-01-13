@@ -17,7 +17,7 @@ allowing more focus on complex issues.
 </p>
 
 
-*Disclaimer:* Due to the sensitive nature of some of the underlying data sources (e.g. the historical citizen reports),
+_**Disclaimer:**_ Due to the sensitive nature of some of the underlying data sources (e.g. the historical citizen reports),
 running the system requires incorporating own data and making the necessary adjustments.
 We hope, however, that its architecture, code and underlying prompts can serve as inspiration for similar use cases.
 
@@ -90,7 +90,7 @@ git clone https://github.com/Amsterdam-AI-Team/citizen-signals-rag-chatbot-syste
 
 ```bash
 sudo apt-get install portaudio19-dev
-```
+``````
 
 3) Install all dependencies:
 
@@ -98,42 +98,69 @@ sudo apt-get install portaudio19-dev
 pip install -r requirements.txt
 ```
 
-The code has been tested with Python 3.10.0 on Linux/MacOS/Windows.
+The code has been tested with Python 3.10.0 on Linux.
+
+
 
 ## Usage
 
-### Step 1: Navigate to scripts
+_**Disclaimer:**_  This repository is intended primarily for transparency and inspiration.
+Due to the sensitive nature of some of the underlying data sources
+(e.g. the historical citizen reports), running the system requires incorporating
+own data and making the necessary adjustments.
+*This could hinder the usage of the system outside of the secure municipal environment.*
 
-First, navigate to the source directory:
+### Configuration
+Before use, please adjust all paths in the [config.py](./src/config.py) file.
+
+You can also decide whether to `track_emissions`,
+select a different `embedding_model_name` (used for the retrieval of historical reports),
+decide on a model in the `model_dict`.
+
+You can also adjust all agent templates according to own preferences.
+
+### Secrets
+
+Furthermore, you will need to add a `[my_secrets.py](./src/my_secrets.py) with an `API_KEYS` object containing
+- `openai_azure` key: an OpenAI API key correspodning to the endpoint in the [config.py](./src/config.py)
+- `co2-signal` key (if `track_emissions=True`)
+
+### Option 1: Run via chat interface
+
+You can use the chat interface by running the app located in the source directory using the following command:
 
 ```bash
-cd src
+python src/app.py
 ```
-
-### Step 2: Run the Chatbot
-
-You can run the chatbot locally by executing the following command:
-
-```bash
-python3 app.py
-```
-
 This will start the chatbot on your localhost, allowing you to interact with it via a web interface.
+By default you can access the app locally on port 5000 ([127.0.0.1:5000](127.0.0.1:5000)).
+
+### Option 2: Call the central agent
+
+Alternatively, you can directly call the central agent by providing
+the report, address and any additional information.
+To do that, adjust the examples on the bottom of the [central_agentic_agent.py](./src/central_agentic_agent.py) script use the following command:
+
+```bash
+python src/central_agentic_agent.py
+```
 
 ### Running via Azure ML
 
-If you wish to run this code via Azure ML services, you should open the repository and run app.py in VS Desktop mode. This will ensure the localhost application works properly.
-Furthermore, you navigate to the blobfuse folder and mount to the storage container using:
+If you wish to run this code via Azure ML services, you can open the repository and run app.py in VS Desktop mode.
+This will ensure the localhost application works properly.
+
+#### Internal storage
+
+For internal use of the original meldingen data, mount the corresponding storage container using:
 
 ```bash
 sh blobfuse_meldingen.sh
 ```
 
-### Notes
+#### TTS Note
 
-- You will need an OpenAI API key for answer generation and image processing. This API keys should also be specified in the configuration file. It is possible to use different LLMs of your choice, but doing so will require modifying the code accordingly. 
-
-- Current implementation for reading messages out loud is not compatible with Azure OpenAI API because the tts model is not (yet) supported.
+The current implementation for reading messages out loud is not compatible with Azure OpenAI API because the tts model is not (yet) supported.
 
 
 ## Contributing
@@ -143,8 +170,6 @@ We welcome contributions! Feel free to [open an issue](https://github.com/Amster
 ## Acknowledgements
 
 This repository was created by [Amsterdam Intelligence](https://amsterdamintelligence.com/) for the City of Amsterdam.
-
-Optional: add citation or references here.
 
 ## License 
 
