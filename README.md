@@ -9,7 +9,7 @@ allowing more focus on complex issues.
 
 <p align="center" width="90%">
     <img width="90%" src=./media/demo-image-4.png alt="{{ include.description }}">
-    <i> Example interaction with the system.
+    <br><i> Example interaction with the system.
         When a melding is received, the system retrieves relevant information
         from various sources, with the aim of providing useful information
         about the issue, whether, when and how it would be resolved
