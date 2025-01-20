@@ -78,7 +78,7 @@ to correspond to the desired model.
 
 More information about the agent, as well as the individual tools can be found in the full [report](OPENRESEARCH_LINK_TO_BE_ADDED).
 
-## Installation 
+## Installation
 
 1) Clone this repository:
 
@@ -171,6 +171,6 @@ We welcome contributions! Feel free to [open an issue](https://github.com/Amster
 
 This repository was created by [Amsterdam Intelligence](https://amsterdamintelligence.com/) for the City of Amsterdam.
 
-## License 
+## License
 
 This project is licensed under the terms of the European Union Public License 1.2 (EUPL-1.2).

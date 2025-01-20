@@ -63,25 +63,25 @@ SYSTEM_CONTENT_ATTRIBUTE_EXTRACTION = "Je bent een behulpzame probleemoplosser. 
 
 INITIAL_MELDING_TEMPLATE = """
 --------------------
-MELDING: 
+MELDING:
 {melding}
 
 --------------------
-TYPE MELDING: 
+TYPE MELDING:
 {type}
 
 --------------------
 
 INSTRUCTIES:
-Schrijf een passende en empathische eerste reactie op deze MELDING. 
-Toon begrip voor de situatie en de gevoelens van de melder. Gebruik eventueel de informatie uit TYPE MELDING om de reactie relevanter te maken. 
+Schrijf een passende en empathische eerste reactie op deze MELDING.
+Toon begrip voor de situatie en de gevoelens van de melder. Gebruik eventueel de informatie uit TYPE MELDING om de reactie relevanter te maken.
 Houd de reactie kort en bondig, zonder aan- of afkondiging, en vermijd het noemen van eventuele vervolgstappen.
 """
 
 MELDING_TYPE_TEMPLATE = """
 Melding: {melding}
 
-Bepaal of de melding duidelijk aangeeft wat het probleem is, en of deze concreet genoeg is om door de verantwoordelijke werknemers opgepakt te worden. 
+Bepaal of de melding duidelijk aangeeft wat het probleem is, en of deze concreet genoeg is om door de verantwoordelijke werknemers opgepakt te worden.
 Losse woorden of alleen steekwoorden zijn bijvoorbeeld onvoldoende concreet.
 Als het voldoende concreet is, wijs een specifiek onderwerp toe dat het probleem beschrijft. Kies een onderwerp dat relevant is voor gemeentelijke diensten, zoals:
 - Vuilnis en afval
@@ -99,17 +99,17 @@ Als er onvoldoende informatie is, geef dan een leeg JSON-object zonder key en va
 
 MELDING_ADDRESS_TEMPLATE = """
 --------------------
-GESPREKSGESCHIEDENIS: 
+GESPREKSGESCHIEDENIS:
 {history}
 
 --------------------
-MELDING: 
+MELDING:
 {melding}
 
 --------------------
 
 INSTRUCTIES:
-Bepaal of er een adres gegevens zijn vermeld in de GESPREKSGESCHIEDENIS en/of MELDING. 
+Bepaal of er een adres gegevens zijn vermeld in de GESPREKSGESCHIEDENIS en/of MELDING.
 Adres gegevens zijn: STRAATNAAM, HUISNUMMER, en POSTCODE.
 Een POSTCODE is alleen correct als het een van de volgende formatteringen heeft: AAAA11, AAAA 11.
 
@@ -121,11 +121,11 @@ POSTCODE: postcode of leeg als niet aanwezig
 
 LICENSE_PLATE_TEMPLATE = """
 --------------------
-GESPREKSGESCHIEDENIS: 
+GESPREKSGESCHIEDENIS:
 {history}
 
 --------------------
-MELDING: 
+MELDING:
 {melding}
 
 --------------------
@@ -149,14 +149,14 @@ The chat history is:
 The current date and time is:
 {date_time}
 
-Your need to create a plan to retrieve and format information that could be shared with the melder (citizen). 
+Your need to create a plan to retrieve and format information that could be shared with the melder (citizen).
 Your goal is providing citizens with relevant information from the municipality regarding the incident report of the citizen and to do this in an empathic manner.
-If possible, you want to provide the citizen with helpful information such that they do not have to speak to an employee of the municipality. 
+If possible, you want to provide the citizen with helpful information such that they do not have to speak to an employee of the municipality.
 
 General Policies to Follow:
 {melding_handling_guidelines}
 
-If you find useful information using the tools, provide that information in your Final Answer (in the language of the melding) while adhering to the above policies. 
+If you find useful information using the tools, provide that information in your Final Answer (in the language of the melding) while adhering to the above policies.
 Start with "Ik heb je opmerking verzonden. Dit is wat ik je nu al kan vertellen." (in the language of the melding).
 If you cannot find any useful information, respond in your Final Answer with: "Ik heb je opmerking verzonden. Helaas heb ik geen relevante informatie gevonden om alvast met je te delen" (in the language of the melding).
 Do not thank the citizen for making a melding. Do thank them for being involved.
@@ -200,7 +200,7 @@ Geef ALLEEN deze geparafraseerde zoekterm terug.
 
 POLICY_MELDING_TEMPLATE = """
 --------------------
-DOCUMENTEN: 
+DOCUMENTEN:
 {context}
 --------------------
 

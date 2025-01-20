@@ -64,7 +64,7 @@ window.addEventListener('beforeunload', clearSessionOnUnload);
 function displayMessage(text, sender, isLoading = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
-    
+
     if (sender === 'bot') {
         const modelIconDiv = document.createElement('div');
         modelIconDiv.className = 'model-icon';
@@ -97,7 +97,7 @@ function displayMessage(text, sender, isLoading = false) {
     // Ensure the scroll happens after the message has been added, with smooth scrolling
     setTimeout(() => {
         messagesDiv.scrollTo({
-            top: messagesDiv.scrollHeight, 
+            top: messagesDiv.scrollHeight,
             behavior: 'smooth' // Enables smooth scrolling
         });
     }, 100); // Adding a short delay to ensure DOM update completes
@@ -223,9 +223,9 @@ async function handleSendButtonClick() {
         const response = await fetch('/query', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                message: userMessage, 
-                model: currentModel, 
+            body: JSON.stringify({
+                message: userMessage,
+                model: currentModel,
                 session: sessionActive,
                 image: base64Image // Retain base64Image for sending to the server
             }),
@@ -317,7 +317,7 @@ function handleDropdownSelection(event) {
         const model = button.getAttribute('data-model'); // Update the current model
         currentModel = model;
         modelSwitcher.innerHTML = `${currentModel} <i class="fas fa-chevron-down"></i>`; // Update the button text
-        dropdownButtons.forEach(btn => btn.classList.remove('selected')); 
+        dropdownButtons.forEach(btn => btn.classList.remove('selected'));
         button.classList.add('selected'); // Select the clicked button
         dropdownMenu.style.display = 'none'; // Hide the dropdown menu
     }
