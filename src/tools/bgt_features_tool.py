@@ -9,7 +9,7 @@ import requests
 from shapely.geometry import Point
 
 sys.path.append("..")
-from utils import geo_utils
+from helpers import geo_utils
 
 
 class BGTTool:
