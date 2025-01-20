@@ -8,10 +8,10 @@ from openai import AzureOpenAI, OpenAI
 
 import config as cfg
 import my_secrets
+from helpers.geo_utils import get_additional_address_info
 from helpers.melding_helpers import (
     add_chat_response,
     generate_image_caption,
-    get_additional_address_info,
     get_melding_attributes,
 )
 
@@ -190,7 +190,9 @@ class MeldingProcessor:
 
     def _generate_address(self):
         """Generate a complete address for the melding using available attributes."""
-        self.melding_attributes["STRAATNAAM"] = get_additional_address_info(self)
+        postcode = self.melding_attributes.get("POSTCODE")
+        huisnummer = self.melding_attributes.get("HUISNUMMER")
+        self.melding_attributes["STRAATNAAM"] = get_additional_address_info(postcode, huisnummer)
         self.melding_attributes["HUISNUMMER"] = re.match(
             r"^\d+", self.melding_attributes.get("HUISNUMMER", "")
         ).group()

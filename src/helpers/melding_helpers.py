@@ -7,7 +7,6 @@ import logging
 import os
 import re
 
-import requests
 from langchain_core.prompts import ChatPromptTemplate
 from openai import AzureOpenAI, OpenAI
 
@@ -53,24 +52,6 @@ def get_melding_attributes(melding, attribute, model_name, chat_history):
     # Load and update attributes based on response
     response_data = json.loads(completion.choices[0].message.content)
     return response_data if response_data else {}
-
-
-def get_additional_address_info(melding):
-    """Use the provided postcode and huisnummer to obtain straatnaam from the bag api"""
-    url = cfg.ENDPOINT_BAG
-    params = {
-        "postcode": melding.melding_attributes.get("POSTCODE"),
-        "huisnummer": melding.melding_attributes.get("HUISNUMMER"),
-    }
-    response = requests.get(url, params=params)
-
-    if response.status_code == 200:
-        data = response.json()
-        if data:
-            if data["_embedded"]["bagadresinformatie"][0]["openbareruimteNaam"]:
-                return data["_embedded"]["bagadresinformatie"][0]["openbareruimteNaam"]
-    else:
-        return ""
 
 
 def select_prompt_template(attribute):

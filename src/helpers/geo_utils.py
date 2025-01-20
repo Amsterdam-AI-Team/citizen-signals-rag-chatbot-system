@@ -2,6 +2,8 @@
 import requests
 from pyproj import Transformer
 
+import config as cfg
+
 
 def wgs84_to_rd(longitude, latitude):
     """
@@ -68,3 +70,21 @@ def get_lon_lat_from_address(address):
     else:
         print(f"Error fetching coordinates for address: {response.status_code}")
         return None, None
+
+
+def get_additional_address_info(postcode, huisnummer):
+    """Use the provided postcode and huisnummer to obtain straatnaam from the bag api"""
+    url = cfg.ENDPOINT_BAG
+    params = {
+        "postcode": postcode,
+        "huisnummer": huisnummer,
+    }
+    response = requests.get(url, params=params)
+
+    if response.status_code == 200:
+        data = response.json()
+        if data:
+            if data["_embedded"]["bagadresinformatie"][0]["openbareruimteNaam"]:
+                return data["_embedded"]["bagadresinformatie"][0]["openbareruimteNaam"]
+    else:
+        return ""
