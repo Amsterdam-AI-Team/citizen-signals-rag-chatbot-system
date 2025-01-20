@@ -1,27 +1,29 @@
 import os
 import sys
+
 sys.path.append("..")
 
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import Chroma
-from openai import OpenAI, AzureOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from openai import AzureOpenAI, OpenAI
 
 import config as cfg
 import my_secrets
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
 
 # Environment setup
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
+
 
 class PolicyRetrieverTool:
-
     def __init__(self, melding):
         self.melding = melding
         if cfg.summarize_melding_for_policy_retrieval:
             self.melding = self.summarize_melding()
-        
-        self.db = Chroma(persist_directory=cfg.CHROMA_PATH, 
-                         embedding_function=OpenAIEmbeddingFunction())
+
+        self.db = Chroma(
+            persist_directory=cfg.CHROMA_PATH, embedding_function=OpenAIEmbeddingFunction()
+        )
 
     def retrieve_policy(self):
         context_text, sources = self.search_db(self.melding)
@@ -36,7 +38,7 @@ class PolicyRetrieverTool:
             melding=self.melding,
         )
         summarized_query = self.invoke_model(prompt, summarize=True)
-        
+
         return summarized_query
 
     def search_db(self, summarized_melding):
@@ -53,16 +55,18 @@ class PolicyRetrieverTool:
                 - sources (list): List of sources used in the search.
         """
         summarized_results = (
-            self.db.similarity_search_with_score(summarized_melding, k=5) if summarized_melding else []
+            self.db.similarity_search_with_score(summarized_melding, k=5)
+            if summarized_melding
+            else []
         )
 
-        combined_results = {
-            doc.metadata.get("source"): doc for doc, _ in summarized_results
-        }
+        combined_results = {doc.metadata.get("source"): doc for doc, _ in summarized_results}
         sources = combined_results.keys()
-        sources = [source.split('/')[-1] for source in sources]
-        context_text = "\n\n---\n\n".join([open(os.path.join(cfg.DOCUMENTS_PATH, source), "r").read() for source in sources])
-        
+        sources = [source.split("/")[-1] for source in sources]
+        context_text = "\n\n---\n\n".join(
+            [open(os.path.join(cfg.DOCUMENTS_PATH, source), "r").read() for source in sources]
+        )
+
         return context_text, sources
 
     def create_prompt(self, context_text):
@@ -72,7 +76,6 @@ class PolicyRetrieverTool:
             melding=self.melding,
         )
         return prompt
-
 
     def invoke_model(self, prompt, summarize=False):
         """
@@ -85,23 +88,27 @@ class PolicyRetrieverTool:
         Returns:
             str: The generated response from the language model.
         """
-        system_content = "Je bent een behulpzame assistent" if summarize else "Je bent een behulpzame ambtenaar."
+        system_content = (
+            "Je bent een behulpzame assistent"
+            if summarize
+            else "Je bent een behulpzame ambtenaar."
+        )
 
-        if cfg.ENDPOINT == 'local':
+        if cfg.ENDPOINT == "local":
             client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
-        elif cfg.ENDPOINT == 'azure':
+        elif cfg.ENDPOINT == "azure":
             client = AzureOpenAI(
-                azure_endpoint=cfg.ENDPOINT_AZURE, 
-                api_key=my_secrets.API_KEYS["openai_azure"],  
-                api_version="2024-02-15-preview"
+                azure_endpoint=cfg.ENDPOINT_AZURE,
+                api_key=my_secrets.API_KEYS["openai_azure"],
+                api_version="2024-02-15-preview",
             )
 
         completion = client.chat.completions.create(
-            model='gpt-4o-mini',
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_content},
-                {"role": "user", "content": prompt}
-            ]
+                {"role": "user", "content": prompt},
+            ],
         )
 
         return completion.choices[0].message.content
@@ -120,9 +127,10 @@ class PolicyRetrieverTool:
         formatted_response = f"Response: {response_text}\nSources: {', '.join(sources)}"
         return formatted_response
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Specify the melding
-    melding = 'Er ligt grofvuil naast een container bij mij in de straat.'
+    melding = "Er ligt grofvuil naast een container bij mij in de straat."
 
     # Instantiate the PolicyRetrieverTool class with the melding
     fetcher = PolicyRetrieverTool(melding)
@@ -130,4 +138,3 @@ if __name__ == '__main__':
     # Retrieve policy
     policy = fetcher.retrieve_policy()
     print(policy)
-    

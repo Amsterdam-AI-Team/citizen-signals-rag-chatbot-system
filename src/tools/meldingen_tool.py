@@ -3,6 +3,7 @@ Implementation of a meldingen retrieval tool.
 The tool is used by the central agent to retrieve duplicate or similar meldingen.
 """
 import sys
+
 sys.path.append("..")
 import logging
 import os
@@ -14,10 +15,11 @@ from pprint import pprint
 import geopandas as gpd
 import pandas as pd
 import requests
+from codecarbon import EmissionsTracker
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 from shapely.geometry import Point
-from codecarbon import EmissionsTracker
+
 import config as cfg
 from helpers import geo_utils
 
@@ -103,7 +105,7 @@ class MeldingenRetrieverTool:
 
     def filter_meldingen_embeddings(self, address):
         """Filter meldingen around a certain address"""
-        lon, lat  = geo_utils.get_lon_lat_from_address(address)
+        lon, lat = geo_utils.get_lon_lat_from_address(address)
         poi = Point(geo_utils.wgs84_to_rd(lon, lat))
         self.meldingen_geodata["distance"] = self.meldingen_geodata.to_crs("EPSG:28992").distance(
             poi

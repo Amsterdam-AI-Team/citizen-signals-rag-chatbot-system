@@ -2,17 +2,17 @@ import json
 import os
 import threading
 
-import sounddevice # keep this import ABOVE 'import pyaudio' for audio streaming.
 import pyaudio
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context
+import sounddevice  # keep this import ABOVE 'import pyaudio' for audio streaming.
+from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 from openai import OpenAI
 
 import config as cfg
 import my_secrets
-from process_melding import  MeldingProcessor
 from helpers.melding_helpers import load_session, save_session
+from process_melding import MeldingProcessor
 
-app = Flask(__name__, template_folder='../templates', static_folder='../static')
+app = Flask(__name__, template_folder="../templates", static_folder="../static")
 """
 Flask application for handling chat queries, session management, and audio streaming.
 
@@ -27,27 +27,29 @@ chat_history = []
 session_active = False
 melding_attributes = {}
 
-@app.route('/')
+
+@app.route("/")
 def home():
     """
     Render the home page of the web application.
 
     This route serves the index.html file located in the templates folder.
-    
+
     Returns:
         str: Rendered HTML of the index page.
     """
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/query', methods=['POST'])
+
+@app.route("/query", methods=["POST"])
 def handle_melding_query():
     global chat_history, session_active, melding_attributes
 
     data = request.json
-    melding = data.get('message')
-    model = data.get('model', 'gpt-4o')  # Default to 'ChatGPT 4o'
+    melding = data.get("message")
+    model = data.get("model", "gpt-4o")  # Default to 'ChatGPT 4o'
     model_name = cfg.model_dict[model]
-    image = data.get('image')
+    image = data.get("image")
 
     if session_active:
         # Continue with the existing session
@@ -61,8 +63,13 @@ def handle_melding_query():
         session_active = True  # Enable session for follow-up conversation
 
     # Initialize or update the complaint session
-    melding_processor = MeldingProcessor(melding=melding, model_name=model_name, base64_image=image, 
-                                         chat_history=chat_history, melding_attributes=melding_attributes)
+    melding_processor = MeldingProcessor(
+        melding=melding,
+        model_name=model_name,
+        base64_image=image,
+        chat_history=chat_history,
+        melding_attributes=melding_attributes,
+    )
     melding_processor.process_melding()
 
     # Update the chat history and save the session
@@ -77,7 +84,8 @@ def handle_melding_query():
     # Return response text to braodcast to frontend
     return jsonify({"response": response_text})
 
-@app.route('/new_session', methods=['POST'])
+
+@app.route("/new_session", methods=["POST"])
 def new_session():
     """
     Start a new chat session.
@@ -88,7 +96,7 @@ def new_session():
         Response: JSON object indicating that a new session has started.
     """
     global chat_history, session_active, meldingen_attributes
-    
+
     # Clear chat history and reset session state
     chat_history = []
     melding_attributes = {}
@@ -102,7 +110,8 @@ def new_session():
 
     return jsonify({"response": "New session started. You can now ask your questions."})
 
-@app.route('/clear-session', methods=['POST'])
+
+@app.route("/clear-session", methods=["POST"])
 def clear_session():
     """
     Deletes the session.json file if it exists.
@@ -118,10 +127,12 @@ def clear_session():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 # Global stop flag to control the streaming
 stop_flag = threading.Event()
 
-@app.route('/read_aloud', methods=['POST'])
+
+@app.route("/read_aloud", methods=["POST"])
 def read_aloud():
     """
     Stream audio for text-to-speech conversion.
@@ -135,7 +146,7 @@ def read_aloud():
     global stop_flag
 
     data = request.json
-    text_to_read = data.get('text', '')
+    text_to_read = data.get("text", "")
 
     if not text_to_read:
         return jsonify({"error": "No text provided"}), 400
@@ -155,19 +166,18 @@ def read_aloud():
             """
             # Initialize PyAudio
             p = pyaudio.PyAudio()
-            stream = p.open(format=pyaudio.paInt16,
-                            channels=1,
-                            rate=24000,
-                            output=True)
+            stream = p.open(format=pyaudio.paInt16, channels=1, rate=24000, output=True)
 
-            yield json.dumps({"status": "stream_started"}) + "\n"  # Send initial message to frontend
+            yield json.dumps(
+                {"status": "stream_started"}
+            ) + "\n"  # Send initial message to frontend
 
             # Stream the audio data to the speakers in real-time
             with client.audio.speech.with_streaming_response.create(
-                    model="tts-1",
-                    voice="alloy",  # Specify the voice model
-                    input=text_to_read,
-                    response_format="pcm"  # Streaming in PCM format
+                model="tts-1",
+                voice="alloy",  # Specify the voice model
+                input=text_to_read,
+                response_format="pcm",  # Streaming in PCM format
             ) as response:
                 for chunk in response.iter_bytes(1024):
                     if stop_flag.is_set():
@@ -180,12 +190,15 @@ def read_aloud():
             stream.close()
             p.terminate()
 
-        return Response(stream_with_context(generate_audio_stream()), mimetype='application/octet-stream')
+        return Response(
+            stream_with_context(generate_audio_stream()), mimetype="application/octet-stream"
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/stop_audio', methods=['POST'])
+
+@app.route("/stop_audio", methods=["POST"])
 def stop_audio():
     """
     Stop the ongoing audio streaming.
@@ -199,11 +212,12 @@ def stop_audio():
     stop_flag.set()  # Set the flag to stop the streaming
     return jsonify({"response": "Audio streaming stopped."})
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     """
     Run the Flask development server.
 
-    If this script is executed directly, it will start the Flask application 
+    If this script is executed directly, it will start the Flask application
     in debug mode on the local development server at port 5001.
     """
     app.run(debug=True, port=5000)

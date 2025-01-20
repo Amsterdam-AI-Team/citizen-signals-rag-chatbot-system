@@ -1,12 +1,14 @@
 import sys
+
 sys.path.append("..")
 
-import requests
-import geopandas as gpd
-from shapely.geometry import Point
-import pandas as pd
-import matplotlib.pyplot as plt
 import contextily as ctx
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import pandas as pd
+import requests
+from shapely.geometry import Point
+
 from utils import geo_utils
 
 
@@ -33,7 +35,7 @@ class BGTTool:
         Raises:
             ValueError: If coordinates cannot be retrieved for the given address.
         """
-        self.base_url = 'https://api.pdok.nl/lv/bgt/ogc/v1'
+        self.base_url = "https://api.pdok.nl/lv/bgt/ogc/v1"
         address = f"{straatnaam} {huisnummer}, {postcode}"
         self.address = address
         # Get longitude and latitude during initialization
@@ -48,14 +50,14 @@ class BGTTool:
         Returns:
             list: A list of collection IDs available in the BGT API.
         """
-        response = requests.get(f'{self.base_url}/collections', params={'f': 'json'})
+        response = requests.get(f"{self.base_url}/collections", params={"f": "json"})
         if response.status_code == 200:
             data = response.json()
-            collections = data.get('collections', [])
-            collection_ids = [collection.get('id') for collection in collections]
+            collections = data.get("collections", [])
+            collection_ids = [collection.get("id") for collection in collections]
             return collection_ids
         else:
-            print(f'Error getting collections: {response.status_code}')
+            print(f"Error getting collections: {response.status_code}")
             return []
 
     def get_features(self, collection_id, x_rd, y_rd):
@@ -79,18 +81,18 @@ class BGTTool:
         bbox_wgs84 = f"{ll_longitude},{ll_latitude},{ur_longitude},{ur_latitude}"
 
         params = {
-            'bbox': bbox_wgs84,
-            'f': 'json',
-            'limit': 1000,
+            "bbox": bbox_wgs84,
+            "f": "json",
+            "limit": 1000,
         }
-        url = f'{self.base_url}/collections/{collection_id}/items'
+        url = f"{self.base_url}/collections/{collection_id}/items"
         response = requests.get(url, params=params)
         if response.status_code == 200:
             data = response.json()
-            features = data.get('features', [])
+            features = data.get("features", [])
             return features
         else:
-            print(f'Error getting features for collection {collection_id}: {response.status_code}')
+            print(f"Error getting features for collection {collection_id}: {response.status_code}")
             return []
 
     def get_bgt_features_at_coordinate(self):
@@ -113,17 +115,17 @@ class BGTTool:
             if features:
                 for feature in features:
                     # Add the collection ID to the feature properties
-                    feature['properties']['collection_id'] = collection_id
+                    feature["properties"]["collection_id"] = collection_id
                     all_features.append(feature)
 
         if all_features:
             # Create a GeoDataFrame from the features
             gdf = gpd.GeoDataFrame.from_features(all_features)
             # Ensure the geometry is correctly set
-            if 'geometry' in gdf.columns:
-                gdf.set_geometry('geometry', inplace=True)
+            if "geometry" in gdf.columns:
+                gdf.set_geometry("geometry", inplace=True)
             else:
-                print('No geometry column found in the data.')
+                print("No geometry column found in the data.")
                 return None
 
             # Create a Point geometry for the coordinate
@@ -136,35 +138,36 @@ class BGTTool:
             if not gdf_contains_point.empty:
                 # Process gdf_contains_point to keep only the latest 'eind_registratie' per 'functie'
                 # Determine the column name for 'functie'
-                if 'functie' in gdf_contains_point.columns:
-                    functie_column = 'functie'
-                elif 'type' in gdf_contains_point.columns:
-                    functie_column = 'type'
+                if "functie" in gdf_contains_point.columns:
+                    functie_column = "functie"
+                elif "type" in gdf_contains_point.columns:
+                    functie_column = "type"
                 else:
                     print("'functie' or 'type' column not found in the data.")
                     functie_column = None  # Proceed without filtering
 
                 # Check if 'eind_registratie' is in columns
-                if 'eind_registratie' in gdf_contains_point.columns and functie_column is not None:
+                if "eind_registratie" in gdf_contains_point.columns and functie_column is not None:
                     # Convert 'eind_registratie' to datetime
                     gdf_contains_point = gdf_contains_point.copy()
-                    gdf_contains_point['eind_registratie'] = pd.to_datetime(
-                        gdf_contains_point['eind_registratie'], utc=True, errors='coerce'
+                    gdf_contains_point["eind_registratie"] = pd.to_datetime(
+                        gdf_contains_point["eind_registratie"], utc=True, errors="coerce"
                     )
                     # Sort and drop duplicates to keep the latest 'eind_registratie' per 'functie'
-                    gdf_contains_point = (
-                        gdf_contains_point.sort_values('eind_registratie', ascending=False, na_position='first')
-                        .drop_duplicates(subset=[functie_column], keep='first')
-                    )
+                    gdf_contains_point = gdf_contains_point.sort_values(
+                        "eind_registratie", ascending=False, na_position="first"
+                    ).drop_duplicates(subset=[functie_column], keep="first")
                 else:
-                    print("'eind_registratie' column not found or 'functie' column not found. Skipping filtering.")
+                    print(
+                        "'eind_registratie' column not found or 'functie' column not found. Skipping filtering."
+                    )
 
                 return gdf_contains_point
             else:
-                print('No features contain the specified coordinate.')
+                print("No features contain the specified coordinate.")
                 return None
         else:
-            print('No BGT features found for this location.')
+            print("No BGT features found for this location.")
             return None
 
     def plot_features(self, gdf):
@@ -179,7 +182,7 @@ class BGTTool:
 
         # Create a GeoDataFrame for the point
         point_geom = Point(self.longitude, self.latitude)
-        point_gdf = gpd.GeoDataFrame([{'geometry': point_geom}], crs='EPSG:4326')
+        point_gdf = gpd.GeoDataFrame([{"geometry": point_geom}], crs="EPSG:4326")
         point_gdf = point_gdf.to_crs(epsg=3857)
 
         # Calculate the combined bounds of the features and the point
@@ -200,8 +203,8 @@ class BGTTool:
 
         # Plot the features and the point
         fig, ax = plt.subplots(figsize=(10, 10))
-        gdf.plot(ax=ax, alpha=0.5, edgecolor='k')
-        point_gdf.plot(ax=ax, color='red', markersize=100)
+        gdf.plot(ax=ax, alpha=0.5, edgecolor="k")
+        point_gdf.plot(ax=ax, color="red", markersize=100)
 
         # Set the plot extent to the buffered bounds
         ax.set_xlim(minx, maxx)
@@ -219,20 +222,21 @@ class BGTTool:
             # Iterate over rows in the GeoDataFrame
             for index, row in gdf.iterrows():
                 # Check if 'bag_pnd' is not NaN
-                if not pd.isna(row['bag_pnd']):
-                    return {'bgt_functie': 'pand'}
+                if not pd.isna(row["bag_pnd"]):
+                    return {"bgt_functie": "pand"}
                 # Check if 'functie' is not NaN
-                if not pd.isna(row['functie']):
-                    return {'bgt_functie': row['functie']}
+                if not pd.isna(row["functie"]):
+                    return {"bgt_functie": row["functie"]}
         # If no valid 'bag_pnd' or 'bgt_functie' is found, return None
         return None
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Specify the address
-    address = 'Amstel, 10, 1017AA'  # Replace with your desired address
+    address = "Amstel, 10, 1017AA"  # Replace with your desired address
 
     # Instantiate the BGTTool class with the address
-    fetcher = BGTTool('Schalk Burgerstraat', '103', '1092KP')
+    fetcher = BGTTool("Schalk Burgerstraat", "103", "1092KP")
 
     # Get BGT features at the coordinate
     bgt_functie = fetcher.get_bgt_features_at_coordinate()

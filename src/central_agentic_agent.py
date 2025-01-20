@@ -1,28 +1,30 @@
 import logging
+import os
+from datetime import datetime
 from functools import partial
 from typing import Optional
-from datetime import datetime
-import os
+
+from codecarbon import EmissionsTracker
+from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
+from langchain.chains import LLMChain
+from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
+from langchain.memory import ConversationBufferMemory
 
 import config as cfg
 import my_secrets
+from helpers.melding_helpers import get_formatted_chat_history
+from tools.address_owner_tool import AddressOwnerTool
 from tools.bgt_features_tool import BGTTool
-from tools.waste_collection_tool import WasteCollectionTool
-from tools.policy_retriever_tool import PolicyRetrieverTool
 from tools.license_plate_permit_tool import LicensePlatePermitTool
 from tools.meldingen_tool import MeldingenRetrieverTool
 from tools.noise_permits_tool import NoisePermitsTool
-from tools.address_owner_tool import AddressOwnerTool
-from helpers.melding_helpers import get_formatted_chat_history
-from langchain.agents import AgentExecutor, Tool, ZeroShotAgent
-from langchain.chains import LLMChain
-from langchain.memory import ConversationBufferMemory
-from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
-from codecarbon import EmissionsTracker
+from tools.policy_retriever_tool import PolicyRetrieverTool
+from tools.waste_collection_tool import WasteCollectionTool
+
 
 class CentralAgent:
     """
-    An improved agent that builds and executes AI-driven plans to retrieve useful information and generate 
+    An improved agent that builds and executes AI-driven plans to retrieve useful information and generate
     tailored responses to resolve a 'melding' (incident or issue) before escalating it into the system.
     """
 
@@ -40,8 +42,9 @@ class CentralAgent:
         """
         self.melding_attributes = melding_attributes or {}
         self.chat_history = chat_history or []
-        self.memory = ConversationBufferMemory(memory_key="chat_history", 
-                                               input_key="melding", return_messages=True)
+        self.memory = ConversationBufferMemory(
+            memory_key="chat_history", input_key="melding", return_messages=True
+        )
 
         # Initialize the language model
         self.llm = self.initialize_llm()
@@ -56,15 +59,14 @@ class CentralAgent:
         """
         Initialize the language model based on the configuration.
         """
-        if cfg.ENDPOINT == 'local':
-            llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=my_secrets.API_KEYS["openai"], 
-                temperature=0
+        if cfg.ENDPOINT == "local":
+            llm = ChatOpenAI(
+                model_name="gpt-4o", api_key=my_secrets.API_KEYS["openai"], temperature=0
             )
-        elif cfg.ENDPOINT == 'azure':
+        elif cfg.ENDPOINT == "azure":
             llm = AzureChatOpenAI(
-                deployment_name='gpt-4o',
-                model_name='gpt-4o',
+                deployment_name="gpt-4o",
+                model_name="gpt-4o",
                 azure_endpoint=cfg.ENDPOINT_AZURE,
                 api_key=my_secrets.API_KEYS["openai_azure"],
                 api_version="2024-02-15-preview",
@@ -77,10 +79,10 @@ class CentralAgent:
         """
         Initialize the tools available to the agent.
         """
-        melding = self.melding_attributes['MELDING']
-        straatnaam = self.melding_attributes['STRAATNAAM']
-        huisnummer = self.melding_attributes['HUISNUMMER']
-        postcode = self.melding_attributes['POSTCODE']
+        melding = self.melding_attributes["MELDING"]
+        straatnaam = self.melding_attributes["STRAATNAAM"]
+        huisnummer = self.melding_attributes["HUISNUMMER"]
+        postcode = self.melding_attributes["POSTCODE"]
         not_allowed_tools = []
 
         os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
@@ -91,18 +93,19 @@ class CentralAgent:
         self.AddressOwnerTool = AddressOwnerTool(straatnaam, huisnummer)
         self.NoisePermitsTool = NoisePermitsTool(straatnaam, huisnummer, postcode, melding)
         self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
-        if self.melding_attributes['LICENSE_PLATE_NEEDED'] == True:
-            license_plate = self.melding_attributes['LICENSE_PLATE']
+        if self.melding_attributes["LICENSE_PLATE_NEEDED"] == True:
+            license_plate = self.melding_attributes["LICENSE_PLATE"]
             if license_plate:
                 self.LicensePlatePermitTool = LicensePlatePermitTool(license_plate)
             else:
-                not_allowed_tools.append('GetLicensePlatePermitInfo')
+                not_allowed_tools.append("GetLicensePlatePermitInfo")
                 logging.warning("LICENSE_PLATE_NEEDED is True but LICENSE_PLATE is missing.")
         else:
-            not_allowed_tools.append('GetLicensePlatePermitInfo')
+            not_allowed_tools.append("GetLicensePlatePermitInfo")
 
         self.MeldingenRetrieverTool = MeldingenRetrieverTool(
-            cfg.embedding_model_name, cfg.meldingen_dump, cfg.index_storage_folder)
+            cfg.embedding_model_name, cfg.meldingen_dump, cfg.index_storage_folder
+        )
 
         tools = [
             Tool(
@@ -143,7 +146,7 @@ class CentralAgent:
                 func=partial(self.get_duplicate_meldingen),
                 description=(
                     "Always use this tool to obtain a list of possibly duplicate meldingen"
-                    "for a melding in the format 'MELDING'"# and an address in the format 'STRAATNAAM HUISNUMMER, POSTCODE"
+                    "for a melding in the format 'MELDING'"  # and an address in the format 'STRAATNAAM HUISNUMMER, POSTCODE"
                     "which might indicate that the issue is already known and should not be reported again"
                 ),
             ),
@@ -168,17 +171,18 @@ class CentralAgent:
             Tool(
                 name="GetPermitInfo",
                 func=partial(self.get_noise_permit),
-                description=("Use this tool find permits, for example for an event or that permit noise in a certain area for a certain period."
-                            "A permit can indicate that for example an event is permitted or the noise from a complaint might be due to permitted noise."
-                            "Returns 'No matching permit found.' if unsuccessful."
+                description=(
+                    "Use this tool find permits, for example for an event or that permit noise in a certain area for a certain period."
+                    "A permit can indicate that for example an event is permitted or the noise from a complaint might be due to permitted noise."
+                    "Returns 'No matching permit found.' if unsuccessful."
                 ),
-            )
+            ),
         ]
 
         # Remove non-allowed tools
         tools = [tool for tool in tools if tool.name not in not_allowed_tools]
         return tools
-    
+
     def initialize_agent_executor(self):
         """
         Initialize the agent executor with the specified tools and LLM.
@@ -195,7 +199,7 @@ class CentralAgent:
             tools=self.tools,
             memory=self.memory,
             verbose=True,
-            handle_parsing_errors="Check your output and make sure it conforms."
+            handle_parsing_errors="Check your output and make sure it conforms.",
         )
         return agent_executor
 
@@ -220,9 +224,10 @@ class CentralAgent:
         logging.info("Building and executing plan to solve melding...")
 
         # Prepare the input prompt variables for the agent
-        melding_text = self.melding_attributes.get('MELDING', '')
+        melding_text = self.melding_attributes.get("MELDING", "")
         formatted_chat_history = get_formatted_chat_history(self.chat_history)
-        melding_handling_guidelines = cfg.MELDING_HANDLING_GUIDELINES # This option allows for easy change of guidelines in config file
+        # This option allows for easy change of guidelines in config file
+        melding_handling_guidelines = cfg.MELDING_HANDLING_GUIDELINES
         # melding_handling_guidelines = open(os.path.join(cfg.MELDING_HANDLING_GUIDELINES_PATH, # this option for final repository
         #                                                     cfg.MELDING_HANDLING_GUIDELINES_FILE), 'r').read()
 
@@ -230,20 +235,21 @@ class CentralAgent:
             "melding": melding_text,
             "chat_history": formatted_chat_history,
             "date_time": self.get_date_time(),
-            "melding_handling_guidelines": melding_handling_guidelines
+            "melding_handling_guidelines": melding_handling_guidelines,
         }
 
         # Run the agent with the input prompt
         try:
-            response = self.agent_executor.invoke(inputs)['output']
+            response = self.agent_executor.invoke(inputs)["output"]
             # Store the response in melding_attributes
-            self.melding_attributes['AGENTIC_INFORMATION'] = response
+            self.melding_attributes["AGENTIC_INFORMATION"] = response
         except Exception as e:
             logging.error(f"An error occurred: {e}")
             # Handle the failure accordingly
-            self.melding_attributes['AGENTIC_INFORMATION'] = (
+            no_useful_info_msg = (
                 "No useful information was found. Your melding will be escalated in the system."
             )
+            self.melding_attributes["AGENTIC_INFORMATION"] = no_useful_info_msg
 
     def get_waste_collection_info(self, address: str) -> str:
         """
@@ -285,7 +291,7 @@ class CentralAgent:
         except Exception as e:
             logging.error(f"Failed to get BGT info: {e}")
             return "No information found"
-        
+
     def get_address_owner_info(self, street: str) -> str:
         """
         Retrieve BGT (Basisregistratie Grootschalige Topografie) information based on the provided address.
@@ -302,7 +308,7 @@ class CentralAgent:
         except Exception as e:
             logging.error(f"Failed to get BGT info: {e}")
             return "No information found"
-        
+
     def get_policy_info(self, melding: str) -> str:
         """
         Retrieve policy information from the website based on the provided melding.
@@ -357,18 +363,19 @@ class CentralAgent:
         logging.info(f"Retrieving duplicates of melding: {melding}")
 
         try:
-            straatnaam = self.melding_attributes['STRAATNAAM']
-            huisnummer = self.melding_attributes['HUISNUMMER']
-            postcode = self.melding_attributes['POSTCODE']
+            straatnaam = self.melding_attributes["STRAATNAAM"]
+            huisnummer = self.melding_attributes["HUISNUMMER"]
+            postcode = self.melding_attributes["POSTCODE"]
             address = f"{straatnaam} {huisnummer}, {postcode}"
-            melding = self.melding_attributes['MELDING']
+            melding = self.melding_attributes["MELDING"]
 
-            return self.MeldingenRetrieverTool.retrieve_meldingen(melding, address=address, top_k=5)
+            return self.MeldingenRetrieverTool.retrieve_meldingen(
+                melding, address=address, top_k=5
+            )
 
         except Exception as e:
             logging.error(f"Failed to retrieve relevant info: {e}")
             return "No information found"
-
 
     def get_similar_meldingen(self, melding: str) -> list[str]:
         """
@@ -385,7 +392,7 @@ class CentralAgent:
         logging.info(f"Retrieving duplicates of melding: {melding}")
 
         try:
-            melding = self.melding_attributes['MELDING']
+            melding = self.melding_attributes["MELDING"]
             return self.MeldingenRetrieverTool.retrieve_meldingen(melding, top_k=5)
 
         except Exception as e:
@@ -420,7 +427,7 @@ class CentralAgent:
     def get_date_time(self) -> str:
         """
         Retrieve the current date and time in the specified format.
-        
+
         Returns:
             str: Current date and time in the format "Wednesday 15 October 2024 18:45".
         """
@@ -430,21 +437,20 @@ class CentralAgent:
 
 # Example usage:
 if __name__ == "__main__":
-
     if cfg.track_emissions:
-        tracker = EmissionsTracker(experiment_id = "inference_central_agentic_agent",
-        co2_signal_api_token = my_secrets.API_KEYS['co2-signal'])
+        tracker = EmissionsTracker(
+            experiment_id="inference_central_agentic_agent",
+            co2_signal_api_token=my_secrets.API_KEYS["co2-signal"],
+        )
         tracker.start()
 
     melding_attributes = {
-
         # Example melding 1 (garbage collection)
         "MELDING": "Er ligt afval naast een container bij mij in de straat.",
         "STRAATNAAM": "Keizersgracht",
         "HUISNUMMER": "75",
         "POSTCODE": "1015CE",
         "LICENSE_PLATE_NEEDED": False,
-
         # Example melding 2 (parking permit)
         # "MELDING": "Er staat een auto geparkeerd op de stoep. Volgens mij heeft deze geen vergunning dus kunnen jullie deze wegslepen?",
         # "STRAATNAAM": "Keizersgracht",
@@ -452,28 +458,24 @@ if __name__ == "__main__":
         # "POSTCODE": "1015CE",
         # "LICENSE_PLATE_NEEDED": True,
         # "LICENSE_PLATE": "DC-743-SK"
-    
         # Example melding 3 (noise permit)
         # "MELDING": "Er is erg veel lawaai van bouwwerkzaamheden bij station zuid, ook op zondag.",
         # "STRAATNAAM": "Zuidplein",
         # "HUISNUMMER": "136",
         # "POSTCODE": "1077XV",
         # "LICENSE_PLATE_NEEDED": False,
-
         # Example melding 4 (responsibility other party)
         # "MELDING": "Er ligt een gewonde duif op straat",
         # "STRAATNAAM": "Ertskade",
         # "HUISNUMMER": "164",
         # "POSTCODE": "1019BB",
         # "LICENSE_PLATE_NEEDED": False,
-
         # Example melding 5 (duplicate melding)
         # "MELDING": "Zwervers voor de Albert Heijn, klanten worden bang.",
         # "STRAATNAAM": "Wibautstraat",
         # "HUISNUMMER": "80",
         # "POSTCODE": "1091GP",
         # "LICENSE_PLATE_NEEDED": False,
-
         # Example melding 7 (policy)
         # "MELDING": "Mijn fiets is onterecht weggehaald, ik had hem 8 weken bij mij voor de deur staan. \
         # Nu moest ik geld betalen om hem op te halen. Ik wil dit geld terug.",
@@ -481,7 +483,6 @@ if __name__ == "__main__":
         # "HUISNUMMER": "10",
         # "POSTCODE": "1074HP",
         # "LICENSE_PLATE_NEEDED": False,
-
     }
 
     agent = CentralAgent(

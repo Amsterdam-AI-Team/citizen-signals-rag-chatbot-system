@@ -1,18 +1,21 @@
 import sys
-sys.path.append("..")
-import numpy as np
-import faiss
-import json
-from helpers.embedding_helpers import OpenAIEmbeddingFunction
-import config as cfg
 
+sys.path.append("..")
+import json
+
+import faiss
+import numpy as np
 from codecarbon import EmissionsTracker
+
+import config as cfg
+from helpers.embedding_helpers import OpenAIEmbeddingFunction
 
 
 class NoisePermitsTool:
     """
     Fetches and processes noise permits information for the area surrounding a given address.
     """
+
     def __init__(self, straatnaam: str, huisnummer: str, postcode: str, melding: str):
         self.straatnaam = straatnaam
         self.huisnummer = huisnummer
@@ -21,9 +24,9 @@ class NoisePermitsTool:
 
         # Load FAISS index and metadata store for noise permits
         self.index = faiss.read_index(cfg.FAISS_NOISE_PATH)
-        with open(cfg.METADATA_STORE_FILE, 'r') as f:
+        with open(cfg.METADATA_STORE_FILE, "r") as f:
             self.metadata_store = json.load(f)
-        
+
         # Initialize the embedding function
         self.embedder = OpenAIEmbeddingFunction()
 
@@ -34,8 +37,8 @@ class NoisePermitsTool:
         """
         # Embed the melding
         query_embedding = self.embedder.embed_query(melding)
-        query_embedding_array = np.array(query_embedding).reshape(1, -1).astype('float32')
-        
+        query_embedding_array = np.array(query_embedding).reshape(1, -1).astype("float32")
+
         # Perform similarity search in FAISS
         distances, indices = self.index.search(query_embedding_array, k=1)  # Get the closest match
         if distances[0][0] < 0.8:  # Similarity threshold
@@ -44,6 +47,7 @@ class NoisePermitsTool:
             return f"Found matching permit: {permit_data}"
         else:
             return "No matching permit found."
+
 
 if __name__ == "__main__":
     tracker = EmissionsTracker()

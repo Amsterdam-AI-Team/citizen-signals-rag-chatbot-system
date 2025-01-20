@@ -1,50 +1,57 @@
 # Base path
-BASE_PATH = '/home/azureuser/cloudfiles/code/blobfuse/meldingen'
+BASE_PATH = "/home/azureuser/cloudfiles/code/blobfuse/meldingen"
 
 # Constants
-CHROMA_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/chroma'
-DOCUMENTS_PATH = f'{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/txt/scraped'
-PERMITS_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_license_plates/'
-ADDRESS_OWNERS_PATH = f'{BASE_PATH}/raw_data/address_owners/'
+CHROMA_PATH = f"{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/chroma"
+DOCUMENTS_PATH = f"{BASE_PATH}/raw_data/amsterdam.nl/20241007_dump/txt/scraped"
+PERMITS_PATH = f"{BASE_PATH}/raw_data/permits/permits_related_to_license_plates/"
+ADDRESS_OWNERS_PATH = f"{BASE_PATH}/raw_data/address_owners/"
 SESSION_FILE = "session.json"
 ATTRIBUTES_FILE = "attributes.json"
 
 HUGGING_CACHE = f"{BASE_PATH}/../hugging_cache"
 
-FAISS_NOISE_PATH = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db'
-METADATA_STORE_FILE = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json'
+FAISS_NOISE_PATH = (
+    f"{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_db"
+)
+METADATA_STORE_FILE = f"{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/noise_permits_faiss_metadata.json"
 
-MELDING_HANDLING_GUIDELINES_PATH = f'{BASE_PATH}/raw_data/melding_handling_guidelines/'
-MELDING_HANDLING_GUIDELINES_FILE = 'melding_handling_guidelines.txt'
+MELDING_HANDLING_GUIDELINES_PATH = f"{BASE_PATH}/raw_data/melding_handling_guidelines/"
+MELDING_HANDLING_GUIDELINES_FILE = "melding_handling_guidelines.txt"
 
 # This is the actual folder with noise permit data
-noise_permits_folder = f'{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/data'
+noise_permits_folder = f"{BASE_PATH}/raw_data/permits/permits_related_to_noise_disturbance/data"
 # This is a subset of the noise permit data, for testing/dev
 # noise_permits_folder = f'{BASE_PATH}/raw_data/permits//permits_related_to_noise_disturbance/data_sample'
 
 # Main folders
-meldingen_in_folder = f'{BASE_PATH}/raw_data'
-meldingen_out_folder = f'{BASE_PATH}/processed_data/'
+meldingen_in_folder = f"{BASE_PATH}/raw_data"
+meldingen_out_folder = f"{BASE_PATH}/processed_data/"
 
 source = "20240821_meldingen_results_prod"
 meldingen_dump = f"{meldingen_in_folder}/{source}.csv"
 
 index_storage_folder = f"{meldingen_out_folder}/indices"
 
-track_emissions = False # Set to True to track emissions to 
+# Set to True to track emissions to
+track_emissions = False
 
 embedding_model_name = "intfloat/multilingual-e5-large"
 # embeddng_model_name = "jegormeister/bert-base-dutch-cased-snli"
 # embeddng_model_name = "NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers"
 
-ENDPOINT = 'azure' # set to 'local' if you wish to run locally using personal OpenAI API key
+# set to 'local' if you wish to run locally using personal OpenAI API key
+ENDPOINT = "azure"
 
 ENDPOINT_AZURE = "https://ai-openai-ont.openai.azure.com/"
 
-ENDPOINT_BAG = "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatie/bagadresinformatie/"
+ENDPOINT_BAG = (
+    "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatie/bagadresinformatie/"
+)
 
 model_dict = {"ChatGPT 4o": "gpt-4o"}
-summarize_melding_for_policy_retrieval = False # set to True if you wish to summarize melding for policy retrieval
+# set to True if you wish to summarize melding for policy retrieval
+summarize_melding_for_policy_retrieval = False
 
 SYSTEM_CONTENT_INITIAL_RESPONSE = "Je bent een behulpzame en empathische probleemoplosser. \
             Je doel is om bewoners van Amsterdam te ondersteunen door begripvolle en respectvolle reacties te geven op hun meldingen en klachten. \

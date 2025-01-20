@@ -1,14 +1,16 @@
 import sys
+
 sys.path.append("..")
 
-import os
 import csv
+import os
 
 import config as cfg
 
+
 class LicensePlatePermitTool:
-    def __init__(self, license_plate, license_plate_field='license_plate_no'):
-        self.csv_file = os.path.join(cfg.PERMITS_PATH, '202410_dummydata_licenseplates.csv')
+    def __init__(self, license_plate, license_plate_field="license_plate_no"):
+        self.csv_file = os.path.join(cfg.PERMITS_PATH, "202410_dummydata_licenseplates.csv")
         self.license_plate = license_plate
         self.license_plate_field = license_plate_field
         self.permits = self.load_permits()
@@ -16,16 +18,18 @@ class LicensePlatePermitTool:
     def load_permits(self):
         permits = {}
         try:
-            with open(self.csv_file, mode='r', newline='') as file:
+            with open(self.csv_file, mode="r", newline="") as file:
                 reader = csv.DictReader(file)
                 for row in reader:
                     license_plate = row.get(self.license_plate_field)
                     if license_plate:
                         permits[license_plate.strip().upper()] = {
                             "permit_type": row.get("permit_type", "").strip(),
-                            "permit_valid_start_date": row.get("permit_valid_start_date", "").strip(),
+                            "permit_valid_start_date": row.get(
+                                "permit_valid_start_date", ""
+                            ).strip(),
                             "permit_valid_end_date": row.get("permit_valid_end_date", "").strip(),
-                            "permit_location": row.get("permit_location", "").strip()
+                            "permit_location": row.get("permit_location", "").strip(),
                         }
             return permits
         except FileNotFoundError:
@@ -55,11 +59,10 @@ class LicensePlatePermitTool:
 
 
 if __name__ == "__main__":
-
     license_plate = "DC-743-SK"
 
     # Initialize the retriever
-    retriever = LicensePlatePermitTool(license_plate = license_plate)
+    retriever = LicensePlatePermitTool(license_plate=license_plate)
     # Test case: Check if permits were loaded
     if retriever.permits:
         print("Permits loaded successfully.")
@@ -69,4 +72,3 @@ if __name__ == "__main__":
     # Test case: Check if a license plate has a permit
     license_plate_with_permit = "DC-743-SK"  # Replace with an actual permit for testing
     print(retriever.has_permit())
-    

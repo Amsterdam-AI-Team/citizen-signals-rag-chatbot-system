@@ -1,15 +1,17 @@
 import sys
+
 sys.path.append("..")
 
-import os
 import csv
+import os
 
 import config as cfg
+
 
 class AddressOwnerTool:
     """
     A tool to retrieve the owner of a specific address based on street name and house number.
-    
+
     Attributes:
         csv_file (str): The path to the CSV file containing address and owner information.
         street (str): The street name of the address to look up.
@@ -20,12 +22,12 @@ class AddressOwnerTool:
     def __init__(self, street, number):
         """
         Initializes the AddressOwnerTool with a specified street and number.
-        
+
         Args:
             street (str): The street name of the address to look up.
             number (str): The house number of the address to look up.
         """
-        self.csv_file = os.path.join(cfg.ADDRESS_OWNERS_PATH, '202411_dummydata_addressowners.csv')
+        self.csv_file = os.path.join(cfg.ADDRESS_OWNERS_PATH, "202411_dummydata_addressowners.csv")
         self.street = street
         self.number = number
         self.owners = self.load_owners()
@@ -33,7 +35,7 @@ class AddressOwnerTool:
     def load_owners(self):
         """
         Loads owner information from a CSV file and stores it in a dictionary.
-        
+
         Each address is stored as a key-value pair, where the key is a tuple (street, number)
         and the value is the owner. This allows for quick lookups based on the combination of
         street and number.
@@ -43,7 +45,7 @@ class AddressOwnerTool:
         """
         owners = {}
         try:
-            with open(self.csv_file, mode='r', newline='') as file:
+            with open(self.csv_file, mode="r", newline="") as file:
                 reader = csv.DictReader(file, delimiter=";")
                 for row in reader:
                     street = row.get("streetname", "").strip().lower()
@@ -62,7 +64,7 @@ class AddressOwnerTool:
 
         If the address (street, number) exists in the loaded data, it returns the owner's name.
         Otherwise, it returns a message indicating that no specific owner was found.
-        
+
         Returns:
             str: A message with the owner's name if found, or "No specific owner found."
         """

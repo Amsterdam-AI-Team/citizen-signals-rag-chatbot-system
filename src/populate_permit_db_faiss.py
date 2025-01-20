@@ -1,30 +1,33 @@
-import os
-import pdfplumber
-import re
 import ast
-import requests
-from langchain.prompts import ChatPromptTemplate
-import config as cfg
-import my_secrets
+import json
+import os
+import re
 from pathlib import Path
+
 import faiss
 import numpy as np
-from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
-import json
-from helpers.embedding_helpers import OpenAIEmbeddingFunction
+import pdfplumber
+import requests
 from codecarbon import EmissionsTracker, track_emissions
+from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+
+import config as cfg
+import my_secrets
+from helpers.embedding_helpers import OpenAIEmbeddingFunction
 
 # Initialize FAISS index filepath
-FAISS_INDEX_PATH = cfg.FAISS_NOISE_PATH 
+FAISS_INDEX_PATH = cfg.FAISS_NOISE_PATH
 METADATA_STORE_FILE = cfg.METADATA_STORE_FILE
 
 # Load existing metadata or initialize an empty store
 try:
-    with open(METADATA_STORE_FILE, 'r') as f:
+    with open(METADATA_STORE_FILE, "r") as f:
         metadata_store = json.load(f)
     print("Loaded metadata from disk.")
 except:
     metadata_store = {}
+
 
 # Step 1: Extract text from each PDF
 def extract_text_from_pdf(pdf_path):
@@ -34,8 +37,10 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text()
     return text
 
+
 # Step 2: Use an LLM to extract metadata from the permit text
-metadata_prompt = ChatPromptTemplate.from_template("""
+metadata_prompt = ChatPromptTemplate.from_template(
+    """
 Extract the location, date issued, permit_validity_time_window, and type of permit, case number, and description from the following text:
 Please give the location in the format:["Streetname",  "housenumber", "zipcode (in 9999AA format)", "cityname"]. If any is unknown, please use "Onbekend".
 Text: {permit_text}
@@ -45,34 +50,36 @@ Permit validity time window:
 Type of Permit:
 Case number:
 Description:
-""")
+"""
+)
+
 
 def initialize_llm():
-        """
-        Initialize the language model based on the configuration.
-        """
-        if cfg.ENDPOINT == 'local':
-            llm = ChatOpenAI(model_name='gpt-4o',
-                api_key=my_secrets.API_KEYS["openai"], 
-                temperature=0
-            )
-        elif cfg.ENDPOINT == 'azure':
-            llm = AzureChatOpenAI(
-                deployment_name='gpt-4o',
-                model_name='gpt-4o',
-                azure_endpoint=cfg.ENDPOINT_AZURE,
-                api_key=my_secrets.API_KEYS["openai_azure"],
-                api_version="2024-02-15-preview",
-                temperature=0,
-            )
-        print(f"The OpenAI LLM is using model: {llm.model_name}")
-        return llm
+    """
+    Initialize the language model based on the configuration.
+    """
+    if cfg.ENDPOINT == "local":
+        llm = ChatOpenAI(model_name="gpt-4o", api_key=my_secrets.API_KEYS["openai"], temperature=0)
+    elif cfg.ENDPOINT == "azure":
+        llm = AzureChatOpenAI(
+            deployment_name="gpt-4o",
+            model_name="gpt-4o",
+            azure_endpoint=cfg.ENDPOINT_AZURE,
+            api_key=my_secrets.API_KEYS["openai_azure"],
+            api_version="2024-02-15-preview",
+            temperature=0,
+        )
+    print(f"The OpenAI LLM is using model: {llm.model_name}")
+    return llm
+
 
 llm_chain = metadata_prompt | initialize_llm()
+
 
 def extract_data(permit_text):
     data = llm_chain.invoke(permit_text).content
     return data
+
 
 # Step 3: Extract metadata fields from the LLM response
 def extract_metadata(data):
@@ -88,39 +95,41 @@ def extract_metadata(data):
         "date_issued": date,
         "permit_time_window": permit_time_window,
         "permit_type": permit_type,
-        "case_number": case_number
+        "case_number": case_number,
     }
+
 
 # Step 4: Process address metadata using an external API
 def process_location_metadata(location):
-    pattern = r'\[.*?\]'
+    pattern = r"\[.*?\]"
     match = re.search(pattern, location)
     if match:
         result = match.group()
         result_list = ast.literal_eval(result)
-        result_dict = dict(zip(['Straatnaam', 'Huisnummer', 'Postcode', 'Stad'], result_list))
+        result_dict = dict(zip(["Straatnaam", "Huisnummer", "Postcode", "Stad"], result_list))
     else:
-        result_dict = {k:'Onbekend' for k in ['Straatnaam', 'Huisnummer', 'Postcode', 'Stad']}
+        result_dict = {k: "Onbekend" for k in ["Straatnaam", "Huisnummer", "Postcode", "Stad"]}
 
-    if result_dict and result_dict['Postcode'] != 'Onbekend':
-        params = {'postcode': result_dict['Postcode']}
-    elif result_dict and result_dict['Straatnaam'] != 'Onbekend':
-        params = {'openbareruimteNaam': result_dict['Straatnaam']}
+    if result_dict and result_dict["Postcode"] != "Onbekend":
+        params = {"postcode": result_dict["Postcode"]}
+    elif result_dict and result_dict["Straatnaam"] != "Onbekend":
+        params = {"openbareruimteNaam": result_dict["Straatnaam"]}
     else:
         return "No postcode or straatname found"
-    
+
     url = "https://api.data.amsterdam.nl/v1/dataverkenner/bagadresinformatie/bagadresinformatie/"
     response = requests.get(url, params=params)
-    
+
     if response.status_code == 200:
         data = response.json()
         if data:
             try:
-                return data['_embedded']['bagadresinformatie'][0]['gebiedenStadsdeelNaam']
+                return data["_embedded"]["bagadresinformatie"][0]["gebiedenStadsdeelNaam"]
             except:
                 return "No results found for the address."
     else:
         return f"Error fetching coordinates for address: {response.status_code}"
+
 
 # Step 5: Load or initialize the FAISS index
 def load_or_initialize_faiss_index(dimension):
@@ -132,28 +141,29 @@ def load_or_initialize_faiss_index(dimension):
         print("Initialized a new FAISS index.")
     return index
 
+
 # Step 6: Populate FAISS with the processed PDF data and metadata
 def store_in_faiss(permit_text, metadata):
     embedder = OpenAIEmbeddingFunction()
     embedding = embedder.embed_query(permit_text)
-    embedding_array = np.array(embedding).reshape(1, -1).astype('float32')
+    embedding_array = np.array(embedding).reshape(1, -1).astype("float32")
 
     # Load or initialize the FAISS index
     dimension = embedding_array.shape[1]
     global index
-    if 'index' not in globals() or index.d != dimension:
+    if "index" not in globals() or index.d != dimension:
         index = load_or_initialize_faiss_index(dimension)
 
     # Add the embedding to the FAISS index
     faiss_id = index.ntotal  # This is the FAISS ID before the next add operation
     index.add(embedding_array)
-    
+
     # Save metadata with FAISS ID
     metadata_store[faiss_id] = metadata
 
     # Save the updated index and metadata to disk
     faiss.write_index(index, FAISS_INDEX_PATH)
-    with open(METADATA_STORE_FILE, 'w') as f:
+    with open(METADATA_STORE_FILE, "w") as f:
         json.dump(metadata_store, f)
     print(f"FAISS index and metadata saved to disk.")
 
@@ -175,31 +185,31 @@ def process_pdf_folder(pdf_folder_path):
                 metadata = extract_metadata(extracted_data)
             except:
                 metadata = {
-                        "location": "Unkown",
-                        "date_issued":"Unkown",
-                        "permit_time_window":"Unkown",
-                        "permit_type": "Unkown",
-                        "case_number": "Unkown",
-                        }
+                    "location": "Unkown",
+                    "date_issued": "Unkown",
+                    "permit_time_window": "Unkown",
+                    "permit_type": "Unkown",
+                    "case_number": "Unkown",
+                }
 
-
-            metadata['description'] = permit_text
+            metadata["description"] = permit_text
 
             # Step 4: Process metadata using external APIs
-            location_metadata = process_location_metadata(metadata['location'])
-            metadata['gebied'] = location_metadata  # Add additional metadata
+            location_metadata = process_location_metadata(metadata["location"])
+            metadata["gebied"] = location_metadata  # Add additional metadata
 
             # Step 5: Store the text and metadata in FAISS
             store_in_faiss(extracted_data, metadata)
 
     print("All PDF data has been processed and stored in FAISS.")
 
+
 # Example usage: Process a folder of PDFs
 pdf_folder_path = cfg.noise_permits_folder
 
 # Dependent on what we specify in .config we either want to run codecarbon or not
 if cfg.track_emissions:
-    tracker = EmissionsTracker(experiment_id = "oneoff_noise_permit_embedding")
+    tracker = EmissionsTracker(experiment_id="oneoff_noise_permit_embedding")
     tracker.start()
     process_pdf_folder(pdf_folder_path)
     tracker.stop()

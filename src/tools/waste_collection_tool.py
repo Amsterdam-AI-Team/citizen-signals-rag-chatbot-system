@@ -1,6 +1,7 @@
 import requests
 from pyproj import Transformer
 
+
 class WasteCollectionTool:
     """
     A class to fetch and process waste collection information for a given address in Amsterdam.
@@ -12,7 +13,7 @@ class WasteCollectionTool:
         api_data (dict): Data retrieved from the Amsterdam waste collection API.
         transformer (Transformer): Coordinate transformer to convert from RD to WGS84.
     """
-    
+
     def __init__(self, straatnaam: str, huisnummer: str, postcode: str):
         """
         Initializes WasteCollectionInfo with the given address and fetches the related waste collection data.
@@ -42,7 +43,13 @@ class WasteCollectionTool:
         response.raise_for_status()  # Raises an error if the request failed
         return response.json()
 
-    def _reconstruct_url(self, rd_x: float, rd_y: float, pk_vid: str = "72ac279c8dc526301726144520a65bd0", layer_code: str = "12493") -> str:
+    def _reconstruct_url(
+        self,
+        rd_x: float,
+        rd_y: float,
+        pk_vid: str = "72ac279c8dc526301726144520a65bd0",
+        layer_code: str = "12493",
+    ) -> str:
         """
         Reconstructs a URL to display nearby waste containers on the map using given RD coordinates.
 
@@ -67,7 +74,7 @@ class WasteCollectionTool:
         Returns:
             str: A formatted string containing the waste collection information for the address.
         """
-        afvalwijzer_list = self.api_data['_embedded']['afvalwijzer']
+        afvalwijzer_list = self.api_data["_embedded"]["afvalwijzer"]
         result = []
 
         # Keep track of the fraction types we have already processed
@@ -93,8 +100,8 @@ class WasteCollectionTool:
 
         # Process all items and store them in fraction_info_mapping
         for afval in afvalwijzer_list:
-            fraction_name = afval.get('afvalwijzerFractieNaam', '')
-            coordinates = afval.get('afvalwijzerGeometrie', {}).get('coordinates', [])
+            fraction_name = afval.get("afvalwijzerFractieNaam", "")
+            coordinates = afval.get("afvalwijzerGeometrie", {}).get("coordinates", [])
 
             if fraction_name in processed_fractions:
                 continue  # Skip if this fraction is already processed
@@ -108,22 +115,22 @@ class WasteCollectionTool:
             hoe_parts = []
 
             # Handle afvalwijzerButtontekst and afvalwijzerUrl
-            button_text = afval.get('afvalwijzerButtontekst')
-            button_url = afval.get('afvalwijzerUrl')
+            button_text = afval.get("afvalwijzerButtontekst")
+            button_url = afval.get("afvalwijzerUrl")
             if button_text and button_url:
                 # For 'Grof' fraction, we might need to construct the URL with extra parameters
-                if fraction_name == 'Grof':
+                if fraction_name == "Grof":
                     # Add the address parameters to the URL if needed
-                    postcode = afval.get('postcode')
-                    huisnummer = afval.get('huisnummer')
-                    huisletter = afval.get('huisletter') or ''
-                    huisnummertoevoeging = afval.get('huisnummertoevoeging') or ''
+                    postcode = afval.get("postcode")
+                    huisnummer = afval.get("huisnummer")
+                    huisletter = afval.get("huisletter") or ""
+                    huisnummertoevoeging = afval.get("huisnummertoevoeging") or ""
                     address_param = f"{postcode},{huisnummer},{huisletter},{huisnummertoevoeging}"
                     button_url += f"?GUID={address_param}&pk_vid={fraction_layer_info[fraction_name]['pk_vid']}"
                 hoe_parts.append(f'<a href="{button_url}">{button_text}</a>')
 
             # Include afvalwijzerInstructie2
-            instructie2 = afval.get('afvalwijzerInstructie2')
+            instructie2 = afval.get("afvalwijzerInstructie2")
             if instructie2:
                 # Combine with existing 'Hoe' information
                 if hoe_parts:
@@ -132,37 +139,37 @@ class WasteCollectionTool:
                     hoe_parts.append(instructie2)
 
             if hoe_parts:
-                hoe = ' '.join(hoe_parts)
+                hoe = " ".join(hoe_parts)
                 info_lines.append(f"Hoe: {hoe}")
 
             # Retrieve Ophaaldag
-            ophaaldag = afval.get('afvalwijzerOphaaldagen2') or afval.get('afvalwijzerOphaaldagen')
+            ophaaldag = afval.get("afvalwijzerOphaaldagen2") or afval.get("afvalwijzerOphaaldagen")
 
             # Exclude Ophaaldag if it matches the specific value to omit
             if ophaaldag and ophaaldag != ophaaldag_to_omit:
                 info_lines.append(f"Ophaaldag: {ophaaldag}")
 
-            buit = afval.get('afvalwijzerBuitenzetten')
+            buit = afval.get("afvalwijzerBuitenzetten")
             if buit:
                 info_lines.append(f"Buitenzetten: {buit}")
 
-            waar = afval.get('afvalwijzerWaar')
+            waar = afval.get("afvalwijzerWaar")
             if waar:
-                if 'Kaart met containers in de buurt' in waar:
+                if "Kaart met containers in de buurt" in waar:
                     # Reconstruct the URL with appropriate layer code and pk_vid
                     layer_info = fraction_layer_info.get(fraction_name, {})
-                    layer_code = layer_info.get('layer_code', '')
-                    pk_vid = layer_info.get('pk_vid', '')
+                    layer_code = layer_info.get("layer_code", "")
+                    pk_vid = layer_info.get("pk_vid", "")
                     link = self._reconstruct_url(rd_x, rd_y, pk_vid=pk_vid, layer_code=layer_code)
                     waar = f'<a href="{link}">{waar}</a>'
                 info_lines.append(f"Waar: {waar}")
 
             # Include afvalwijzerAfvalkalenderOpmerking
-            remark = afval.get('afvalwijzerAfvalkalenderOpmerking')
+            remark = afval.get("afvalwijzerAfvalkalenderOpmerking")
             if remark:
                 info_lines.append(remark)
 
-            info = '\n'.join(info_lines)
+            info = "\n".join(info_lines)
             fraction_info_mapping[fraction_name] = info
             processed_fractions.add(fraction_name)
 
@@ -171,13 +178,17 @@ class WasteCollectionTool:
             if fraction_info_mapping.get(fraction):
                 # For "Grof", rename to "Grof afval"
                 if fraction == "Grof":
-                    fraction_info_mapping[fraction] = fraction_info_mapping[fraction].replace("Grof", "Grof afval", 1)
+                    fraction_info_mapping[fraction] = fraction_info_mapping[fraction].replace(
+                        "Grof", "Grof afval", 1
+                    )
                 # Replace "Rest" with "Restafval" for consistency
                 if fraction == "Rest":
-                    fraction_info_mapping[fraction] = fraction_info_mapping[fraction].replace("Rest", "Restafval", 1)
+                    fraction_info_mapping[fraction] = fraction_info_mapping[fraction].replace(
+                        "Rest", "Restafval", 1
+                    )
                 result.append(fraction_info_mapping[fraction])
 
-        return '\n\n'.join(result)
+        return "\n\n".join(result)
 
     def get_collection_times(self) -> str:
         """
@@ -187,15 +198,15 @@ class WasteCollectionTool:
             str: A formatted string with collection times for each waste category.
         """
         return self._process_waste_info()
-    
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     # Specify the address
-    address = 'Amstel, 10, 1017AA'  # Replace with your desired address
+    address = "Amstel, 10, 1017AA"  # Replace with your desired address
 
     # Instantiate the WasteCollectionTool class with the address
-    fetcher = WasteCollectionTool('Schalk Burgerstraat', '103', '1092KP')
+    fetcher = WasteCollectionTool("Schalk Burgerstraat", "103", "1092KP")
 
     # Get waste collection info at specified address
     waste_collection_info = fetcher.get_collection_times()
     print(waste_collection_info)
-    
