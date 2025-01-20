@@ -1,20 +1,24 @@
+"""Populate the current dummy db of noise permits using an LLM"""
 import ast
 import json
+import logging
 import os
 import re
-from pathlib import Path
 
 import faiss
 import numpy as np
 import pdfplumber
 import requests
-from codecarbon import EmissionsTracker, track_emissions
+from codecarbon import EmissionsTracker
 from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 
 import config as cfg
 import my_secrets
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
+
+logger = logging.getLogger(__name__)
+
 
 # Initialize FAISS index filepath
 FAISS_INDEX_PATH = cfg.FAISS_NOISE_PATH
@@ -25,7 +29,8 @@ try:
     with open(METADATA_STORE_FILE, "r") as f:
         metadata_store = json.load(f)
     print("Loaded metadata from disk.")
-except:
+except Exception as e:
+    logger.error(f"Error occurred: {e}")
     metadata_store = {}
 
 
@@ -55,9 +60,7 @@ Description:
 
 
 def initialize_llm():
-    """
-    Initialize the language model based on the configuration.
-    """
+    """Initialize the language model based on the configuration."""
     if cfg.ENDPOINT == "local":
         llm = ChatOpenAI(model_name="gpt-4o", api_key=my_secrets.API_KEYS["openai"], temperature=0)
     elif cfg.ENDPOINT == "azure":
@@ -125,7 +128,8 @@ def process_location_metadata(location):
         if data:
             try:
                 return data["_embedded"]["bagadresinformatie"][0]["gebiedenStadsdeelNaam"]
-            except:
+            except Exception as e:
+                logger.error(f"Error occurred: {e}")
                 return "No results found for the address."
     else:
         return f"Error fetching coordinates for address: {response.status_code}"
@@ -165,7 +169,7 @@ def store_in_faiss(permit_text, metadata):
     faiss.write_index(index, FAISS_INDEX_PATH)
     with open(METADATA_STORE_FILE, "w") as f:
         json.dump(metadata_store, f)
-    print(f"FAISS index and metadata saved to disk.")
+    print(f"FAISS index and metadata saved to {METADATA_STORE_FILE}.")
 
 
 # Step 7: Main function to process a folder of PDFs
@@ -183,7 +187,8 @@ def process_pdf_folder(pdf_folder_path):
             # Step 3: Extract metadata from the LLM response
             try:
                 metadata = extract_metadata(extracted_data)
-            except:
+            except Exception as e:
+                logger.error(f"Error occurred: {e}")
                 metadata = {
                     "location": "Unkown",
                     "date_issued": "Unkown",

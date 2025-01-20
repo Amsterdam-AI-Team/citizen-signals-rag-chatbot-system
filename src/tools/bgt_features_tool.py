@@ -1,6 +1,5 @@
+"""A module to fetch the BGT features of a specific address based on street name and house number."""
 import sys
-
-sys.path.append("..")
 
 import contextily as ctx
 import geopandas as gpd
@@ -9,6 +8,7 @@ import pandas as pd
 import requests
 from shapely.geometry import Point
 
+sys.path.append("..")
 from utils import geo_utils
 
 
@@ -74,7 +74,7 @@ class BGTTool:
         """
         delta = 5  # Adjust as needed
         # Create a bounding box in RD coordinates
-        bbox_rd = f"{x_rd - delta},{y_rd - delta},{x_rd + delta},{y_rd + delta}"
+        # bbox_rd = f"{x_rd - delta},{y_rd - delta},{x_rd + delta},{y_rd + delta}"
         # Convert RD bbox to WGS84 bbox
         ll_longitude, ll_latitude = geo_utils.rd_to_wgs84(x_rd - delta, y_rd - delta)
         ur_longitude, ur_latitude = geo_utils.rd_to_wgs84(x_rd + delta, y_rd + delta)
@@ -218,9 +218,10 @@ class BGTTool:
         plt.show()
 
     def get_functie_from_gdf(self, gdf):
+        """Translate function (if any) to human friendly output"""
         if gdf is not None:
             # Iterate over rows in the GeoDataFrame
-            for index, row in gdf.iterrows():
+            for _, row in gdf.iterrows():
                 # Check if 'bag_pnd' is not NaN
                 if not pd.isna(row["bag_pnd"]):
                     return {"bgt_functie": "pand"}

@@ -1,14 +1,18 @@
+"""
+A tool for retrieving permit details for a specific license plate.
+For privacy and security reasons, currently implemented to use dummy data.
+"""
+import csv
+import os
 import sys
 
 sys.path.append("..")
-
-import csv
-import os
-
 import config as cfg
 
 
 class LicensePlatePermitTool:
+    """A tool to retrieve permit details for a specific license plate."""
+
     def __init__(self, license_plate, license_plate_field="license_plate_no"):
         self.csv_file = os.path.join(cfg.PERMITS_PATH, "202410_dummydata_licenseplates.csv")
         self.license_plate = license_plate
@@ -16,6 +20,7 @@ class LicensePlatePermitTool:
         self.permits = self.load_permits()
 
     def load_permits(self):
+        """Load the relevant informaton for license places having a permit"""
         permits = {}
         try:
             with open(self.csv_file, mode="r", newline="") as file:

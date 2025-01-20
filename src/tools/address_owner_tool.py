@@ -1,10 +1,12 @@
+"""
+A module to retrieve the owner of a specific address based on street name and house number.
+For privacy and security reasons, it currently uses dummy data.
+"""
+import csv
+import os
 import sys
 
 sys.path.append("..")
-
-import csv
-import os
-
 import config as cfg
 
 

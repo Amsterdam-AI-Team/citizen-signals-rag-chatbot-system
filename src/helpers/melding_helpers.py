@@ -1,3 +1,7 @@
+"""
+A module containing helpers for processing a report, such as e.g.
+generating a caption, handling the sessions, etc
+"""
 import json
 import logging
 import os
@@ -52,9 +56,7 @@ def get_melding_attributes(melding, attribute, model_name, chat_history):
 
 
 def get_additional_address_info(melding):
-    """
-    Use the provided postcode and huisnummer to obtain straatnaam from the bag api
-    """
+    """Use the provided postcode and huisnummer to obtain straatnaam from the bag api"""
     url = cfg.ENDPOINT_BAG
     params = {
         "postcode": melding.melding_attributes.get("POSTCODE"),

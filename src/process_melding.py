@@ -1,7 +1,7 @@
+"""Handling of melding including collecting necessary data and providing initial response"""
 import logging
 import os
 import re
-from datetime import datetime
 
 from langchain_core.prompts import ChatPromptTemplate
 from openai import AzureOpenAI, OpenAI
@@ -10,7 +10,6 @@ import config as cfg
 import my_secrets
 from helpers.melding_helpers import (
     add_chat_response,
-    check_postcode_format,
     generate_image_caption,
     get_additional_address_info,
     get_melding_attributes,
@@ -32,9 +31,7 @@ class MeldingProcessor:
     def __init__(
         self, melding, model_name, base64_image=None, chat_history=None, melding_attributes=None
     ):
-        """
-        Initialize the MeldingProcessor with the melding text, model name, and optional attributes.
-        """
+        """Initialize the MeldingProcessor with the melding text, model name, and optional attributes."""
         self.melding = melding
         self.model_name = model_name
         self.base64_image = base64_image
@@ -43,7 +40,8 @@ class MeldingProcessor:
 
     def process_melding(self):
         """
-        Main method to process the melding by requesting user information and providing agentic AI information.
+        Main method to process the melding by requesting user information and
+        providing agentic AI information.
         """
         logging.info("Starting melding processing with attributes: %s", self.melding_attributes)
         response = []
@@ -151,9 +149,7 @@ class MeldingProcessor:
         return
 
     def _generate_initial_response(self):
-        """
-        Generate the initial response specific to the melding type.
-        """
+        """Generate the initial response specific to the melding type."""
         prompt_template = ChatPromptTemplate.from_template(cfg.INITIAL_MELDING_TEMPLATE)
         prompt = prompt_template.format(melding=self.melding, type=self.melding_attributes["TYPE"])
 
@@ -177,9 +173,7 @@ class MeldingProcessor:
         self.melding_attributes["INITIAL_RESPONSE"] = completion.choices[0].message.content
 
     def _build_address_prompt(self):
-        """
-        Build a prompt to request missing address information from the user.
-        """
+        """Build a prompt to request missing address information from the user."""
         if self.melding_attributes.get("POSTCODE") and not self.melding_attributes.get(
             "HUISNUMMER"
         ):
@@ -195,9 +189,7 @@ class MeldingProcessor:
         return None
 
     def _generate_address(self):
-        """
-        Generate a complete address for the melding using available attributes.
-        """
+        """Generate a complete address for the melding using available attributes."""
         self.melding_attributes["STRAATNAAM"] = get_additional_address_info(self)
         self.melding_attributes["HUISNUMMER"] = re.match(
             r"^\d+", self.melding_attributes.get("HUISNUMMER", "")
@@ -210,9 +202,7 @@ class MeldingProcessor:
         }
 
     def _melding_requires_license_plate(self):
-        """
-        Use LLM to determine whether the melding requires a license plate.
-        """
+        """Use LLM to determine whether the melding requires a license plate."""
         # Check if we already determined if license plate is needed
         if "LICENSE_PLATE_NEEDED" in self.melding_attributes:
             return self.melding_attributes["LICENSE_PLATE_NEEDED"]
@@ -252,9 +242,7 @@ class MeldingProcessor:
             return False
 
     def _get_final_response(self):
-        """
-        Handle the user's final response to determine if their issue is resolved.
-        """
+        """Handle the user's final response to determine if their issue is resolved."""
         response_map = {
             "ja": "Je kan via hier de melding afmaken: https://meldingen.amsterdam.nl/incident/beschrijf",
             "nee": "Fijn te horen, nog een prettige dag.",

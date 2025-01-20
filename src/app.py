@@ -1,10 +1,17 @@
+"""Main app for chatbot-like interaction"""
 import json
 import os
 import threading
 
 import pyaudio
-import sounddevice  # keep this import ABOVE 'import pyaudio' for audio streaming.
-from flask import Flask, Response, jsonify, render_template, request, stream_with_context
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    stream_with_context,
+)
 from openai import OpenAI
 
 import config as cfg
@@ -21,6 +28,7 @@ This module sets up the routes and logic for:
 - Handling chat queries and maintaining session state
 - Starting and stopping audio streaming using OpenAI's text-to-speech (TTS) service
 """
+global chat_history, session_active, melding_attributes
 
 # Global variable to manage session state
 chat_history = []
@@ -44,7 +52,6 @@ def home():
 @app.route("/query", methods=["POST"])
 def handle_melding_query():
     global chat_history, session_active, melding_attributes
-
     data = request.json
     melding = data.get("message")
     model = data.get("model", "gpt-4o")  # Default to 'ChatGPT 4o'
@@ -95,7 +102,7 @@ def new_session():
     Returns:
         Response: JSON object indicating that a new session has started.
     """
-    global chat_history, session_active, meldingen_attributes
+    global chat_history, session_active, melding_attributes
 
     # Clear chat history and reset session state
     chat_history = []
@@ -113,17 +120,21 @@ def new_session():
 
 @app.route("/clear-session", methods=["POST"])
 def clear_session():
-    """
-    Deletes the session.json file if it exists.
-    """
+    """Deletes the session.json file if it exists."""
     try:
         if os.path.exists(cfg.SESSION_FILE):
             os.remove(cfg.SESSION_FILE)
         if os.path.exists(cfg.ATTRIBUTES_FILE):
             os.remove(cfg.ATTRIBUTES_FILE)
-            return jsonify({"status": "success", "message": "Session file deleted."}), 200
+            return (
+                jsonify({"status": "success", "message": "Session file deleted."}),
+                200,
+            )
         else:
-            return jsonify({"status": "success", "message": "No session file to delete."}), 200
+            return (
+                jsonify({"status": "success", "message": "No session file to delete."}),
+                200,
+            )
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -191,7 +202,8 @@ def read_aloud():
             p.terminate()
 
         return Response(
-            stream_with_context(generate_audio_stream()), mimetype="application/octet-stream"
+            stream_with_context(generate_audio_stream()),
+            mimetype="application/octet-stream",
         )
 
     except Exception as e:

@@ -1,20 +1,21 @@
-import sys
-
-sys.path.append("..")
+"""
+A tool to fetch noise permits information for the area surrounding a given address.
+Currently uses dummy data generated using the populate_permit_db_faiss.py script
+"""
 import json
+import sys
 
 import faiss
 import numpy as np
 from codecarbon import EmissionsTracker
 
+sys.path.append("..")
 import config as cfg
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
 
 
 class NoisePermitsTool:
-    """
-    Fetches and processes noise permits information for the area surrounding a given address.
-    """
+    """Fetches and processes noise permits information for the area surrounding a given address."""
 
     def __init__(self, straatnaam: str, huisnummer: str, postcode: str, melding: str):
         self.straatnaam = straatnaam

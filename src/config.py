@@ -1,3 +1,5 @@
+"""Full configuration including paths, parameters & agent templates."""
+
 # Base path
 BASE_PATH = "/home/azureuser/cloudfiles/code/blobfuse/meldingen"
 

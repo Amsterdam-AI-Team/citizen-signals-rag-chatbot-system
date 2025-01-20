@@ -2,24 +2,22 @@
 Implementation of a meldingen retrieval tool.
 The tool is used by the central agent to retrieve duplicate or similar meldingen.
 """
-import sys
 
-sys.path.append("..")
 import logging
 import os
 import pickle
+import sys
 from ast import literal_eval
 from pathlib import Path
 from pprint import pprint
 
 import geopandas as gpd
 import pandas as pd
-import requests
-from codecarbon import EmissionsTracker
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 from shapely.geometry import Point
 
+sys.path.append("..")
 import config as cfg
 from helpers import geo_utils
 
@@ -70,7 +68,6 @@ class MeldingenRetrieverTool:
 
     def _get_persist_path(self):
         """Get path to index. Embed number of meldingen to account for different sizes."""
-        # TODO: Incorporate hashing to reindex on document update
         return (
             self.index_storage_folder
             / f"meldingen_{len(self.meldingen_data)}_{self.model_name.replace('/', '_')}.pkl"
@@ -141,7 +138,6 @@ class MeldingenRetrieverTool:
         query_embedding = self.embedding_model.encode(query)
         hits = semantic_search(query_embedding, corpus_embeddings, top_k=top_k)
 
-        # TODO: cutoff based on similarity?
         hit_ids = [hit["corpus_id"] for hit in hits[0]]
         logging.info(f"Hits: {hits}")
 
@@ -173,16 +169,11 @@ def literal_return(val):
 if __name__ == "__main__":
     logging.basicConfig(level="INFO")
 
-    # TODO: import all from cfg
-    HUGGING_CACHE = "/home/azureuser/cloudfiles/code//hugging_cache"
-    os.environ["TRANSFORMERS_CACHE"] = HUGGING_CACHE
-    os.environ["HF_HOME"] = HUGGING_CACHE
+    os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
+    os.environ["HF_HOME"] = cfg.HUGGING_CACHE
 
-    meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
-    meldingen_out_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/processed_data/"
-    source = "20240821_meldingen_results_prod"
-    meldingen_path = f"{meldingen_in_folder}/{source}.csv"
-    index_folder = f"{meldingen_out_folder}/indices"
+    meldingen_path = f"{cfg.meldingen_in_folder}/{cfg.source}.csv"
+    index_folder = f"{cfg.meldingen_out_folder}/indices"
 
     model_name = "intfloat/multilingual-e5-large"
     # model_name = "zeta-alpha-ai/Zeta-Alpha-E5-Mistral"

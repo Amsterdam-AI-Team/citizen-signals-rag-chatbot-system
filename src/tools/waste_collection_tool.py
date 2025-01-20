@@ -1,3 +1,4 @@
+"""A tool to fetch waste collection information for a given address in Amsterdam."""
 import requests
 from pyproj import Transformer
 

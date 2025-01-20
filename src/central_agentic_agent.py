@@ -1,3 +1,4 @@
+"""Central agent handling the reports, orchestrating all tools, etc"""
 import logging
 import os
 from datetime import datetime
@@ -56,9 +57,7 @@ class CentralAgent:
         self.agent_executor = self.initialize_agent_executor()
 
     def initialize_llm(self):
-        """
-        Initialize the language model based on the configuration.
-        """
+        """Initialize the language model based on the configuration."""
         if cfg.ENDPOINT == "local":
             llm = ChatOpenAI(
                 model_name="gpt-4o", api_key=my_secrets.API_KEYS["openai"], temperature=0
@@ -76,9 +75,7 @@ class CentralAgent:
         return llm
 
     def initialize_tools(self):
-        """
-        Initialize the tools available to the agent.
-        """
+        """Initialize the tools available to the agent."""
         melding = self.melding_attributes["MELDING"]
         straatnaam = self.melding_attributes["STRAATNAAM"]
         huisnummer = self.melding_attributes["HUISNUMMER"]
@@ -93,7 +90,8 @@ class CentralAgent:
         self.AddressOwnerTool = AddressOwnerTool(straatnaam, huisnummer)
         self.NoisePermitsTool = NoisePermitsTool(straatnaam, huisnummer, postcode, melding)
         self.PolicyRetrieverTool = PolicyRetrieverTool(melding)
-        if self.melding_attributes["LICENSE_PLATE_NEEDED"] == True:
+
+        if self.melding_attributes["LICENSE_PLATE_NEEDED"]:
             license_plate = self.melding_attributes["LICENSE_PLATE"]
             if license_plate:
                 self.LicensePlatePermitTool = LicensePlatePermitTool(license_plate)
@@ -184,9 +182,7 @@ class CentralAgent:
         return tools
 
     def initialize_agent_executor(self):
-        """
-        Initialize the agent executor with the specified tools and LLM.
-        """
+        """Initialize the agent executor with the specified tools and LLM."""
         prompt = self.create_custom_prompt()
         llm_chain = LLMChain(llm=self.llm, prompt=prompt)
 
@@ -204,9 +200,7 @@ class CentralAgent:
         return agent_executor
 
     def create_custom_prompt(self):
-        """
-        Create a custom prompt template for the agent using ZeroShotAgent.create_prompt.
-        """
+        """Create a custom prompt template for the agent."""
         prompt = ZeroShotAgent.create_prompt(
             tools=self.tools,
             prefix=cfg.AGENTIC_AI_AGENT_PROMPT_PREFIX,
@@ -320,6 +314,7 @@ class CentralAgent:
             str: Policy information or 'No information found' if unsuccessful.
         """
         logging.info(f"Retrieving policy info for melding: {melding}")
+
         try:
             policy_info = self.PolicyRetrieverTool.retrieve_policy()
             if not policy_info:
@@ -340,6 +335,7 @@ class CentralAgent:
             str: License plate permit information or 'No information found' if unsuccessful.
         """
         logging.info(f"Retrieving permit info for license plate: {license_plate}")
+
         try:
             license_plate_info = self.LicensePlatePermitTool.has_permit()
             if not license_plate_info:
@@ -388,7 +384,6 @@ class CentralAgent:
         Returns:
             [str]: a list of relevant meldingen together with examples answers.
         """
-
         logging.info(f"Retrieving duplicates of melding: {melding}")
 
         try:
@@ -410,10 +405,7 @@ class CentralAgent:
         Returns:
             [str]: the permit text and some metadata distilled from the permit text
         """
-
         logging.info(f"Retrieving noise permit of: {melding}")
-
-        logging.info(f"Retrieving policy info for melding: {melding}")
 
         try:
             permit_text = self.NoisePermitsTool.handle_melding(melding)

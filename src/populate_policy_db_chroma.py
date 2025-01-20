@@ -1,10 +1,11 @@
+"""Populate the Chroma DB used in the policy retrieval tool in advance."""
 import argparse
 import os
 import re
 import shutil
 from typing import List
 
-from codecarbon import EmissionsTracker, track_emissions
+from codecarbon import EmissionsTracker
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
