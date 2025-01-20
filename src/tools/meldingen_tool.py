@@ -2,6 +2,8 @@
 Implementation of a meldingen retrieval tool.
 The tool is used by the central agent to retrieve duplicate or similar meldingen.
 """
+import sys
+sys.path.append("..")
 import logging
 import os
 import pickle
@@ -12,12 +14,12 @@ from pprint import pprint
 import geopandas as gpd
 import pandas as pd
 import requests
-from pyproj import Transformer
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 from shapely.geometry import Point
 from codecarbon import EmissionsTracker
 import config as cfg
+from helpers import geo_utils
 
 
 class MeldingenRetrieverTool:
@@ -101,9 +103,8 @@ class MeldingenRetrieverTool:
 
     def filter_meldingen_embeddings(self, address):
         """Filter meldingen around a certain address"""
-        transformer_to_rd = Transformer.from_crs("EPSG:4326", "EPSG:28992", always_xy=True)
-        lat, lon = get_lat_lon_from_address(address)
-        poi = Point(transformer_to_rd.transform(lat, lon))
+        lon, lat  = geo_utils.get_lon_lat_from_address(address)
+        poi = Point(geo_utils.wgs84_to_rd(lon, lat))
         self.meldingen_geodata["distance"] = self.meldingen_geodata.to_crs("EPSG:28992").distance(
             poi
         )
@@ -165,42 +166,6 @@ def literal_return(val):
         return literal_eval(val)
     except ValueError:
         return val
-
-
-# TODO: Transfer to common utils
-def get_lat_lon_from_address(address):
-    """
-    Retrieves the longitude and latitude for a given address using the Nominatim API.
-
-    Args:
-        address (str): The address to geocode.
-
-    Returns:
-        tuple: A tuple containing the longitude and latitude, or (None, None) if not found.
-    """
-    # Define the endpoint and parameters for the Nominatim API
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {"q": address, "format": "json", "limit": 1}
-
-    # Include the User-Agent header
-    headers = {"User-Agent": "BGTFetcher/1.0 (test@test.com)"}
-
-    # Make a GET request to the API with headers
-    response = requests.get(url, params=params, headers=headers)
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        data = response.json()
-        if data:
-            lat = float(data[0]["lat"])
-            lon = float(data[0]["lon"])
-            return lon, lat
-        else:
-            print("No results found for the address.")
-            return None, None
-    else:
-        print(f"Error fetching coordinates for address: {response.status_code}")
-        return None, None
 
 
 if __name__ == "__main__":

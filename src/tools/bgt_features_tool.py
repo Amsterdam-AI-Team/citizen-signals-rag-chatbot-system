@@ -1,10 +1,14 @@
+import sys
+sys.path.append("..")
+
 import requests
-from pyproj import Transformer
 import geopandas as gpd
 from shapely.geometry import Point
 import pandas as pd
 import matplotlib.pyplot as plt
 import contextily as ctx
+from utils import geo_utils
+
 
 class BGTTool:
     """
@@ -30,82 +34,12 @@ class BGTTool:
             ValueError: If coordinates cannot be retrieved for the given address.
         """
         self.base_url = 'https://api.pdok.nl/lv/bgt/ogc/v1'
-        self.transformer_to_rd = Transformer.from_crs("EPSG:4326", "EPSG:28992", always_xy=True)
-        self.transformer_to_wgs84 = Transformer.from_crs("EPSG:28992", "EPSG:4326", always_xy=True)
         address = f"{straatnaam} {huisnummer}, {postcode}"
         self.address = address
         # Get longitude and latitude during initialization
-        self.longitude, self.latitude = self.get_lat_lon_from_address(address)
+        self.longitude, self.latitude = geo_utils.get_lon_lat_from_address(address)
         if self.longitude is None or self.latitude is None:
             raise ValueError("Could not retrieve coordinates for the given address.")
-
-    def wgs84_to_rd(self, longitude, latitude):
-        """
-        Converts WGS84 coordinates to RD New (EPSG:28992) coordinates.
-
-        Args:
-            longitude (float): Longitude in WGS84.
-            latitude (float): Latitude in WGS84.
-
-        Returns:
-            tuple: A tuple containing the x and y RD coordinates.
-        """
-        x_rd, y_rd = self.transformer_to_rd.transform(longitude, latitude)
-        return x_rd, y_rd
-
-    def rd_to_wgs84(self, x_rd, y_rd):
-        """
-        Converts RD New (EPSG:28992) coordinates to WGS84 coordinates.
-
-        Args:
-            x_rd (float): X coordinate in RD New.
-            y_rd (float): Y coordinate in RD New.
-
-        Returns:
-            tuple: A tuple containing the longitude and latitude in WGS84.
-        """
-        longitude, latitude = self.transformer_to_wgs84.transform(x_rd, y_rd)
-        return longitude, latitude
-
-    def get_lat_lon_from_address(self, address):
-        """
-        Retrieves the longitude and latitude for a given address using the Nominatim API.
-
-        Args:
-            address (str): The address to geocode.
-
-        Returns:
-            tuple: A tuple containing the longitude and latitude, or (None, None) if not found.
-        """
-        # Define the endpoint and parameters for the Nominatim API
-        url = 'https://nominatim.openstreetmap.org/search'
-        params = {
-            'q': address,
-            'format': 'json',
-            'limit': 1
-        }
-
-        # Include the User-Agent header
-        headers = {
-            'User-Agent': 'BGTFetcher/1.0 (test@test.com)'
-        }
-
-        # Make a GET request to the API with headers
-        response = requests.get(url, params=params, headers=headers)
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            data = response.json()
-            if data:
-                lat = float(data[0]['lat'])
-                lon = float(data[0]['lon'])
-                return lon, lat
-            else:
-                print("No results found for the address.")
-                return None, None
-        else:
-            print(f"Error fetching coordinates for address: {response.status_code}")
-            return None, None
 
     def get_collections(self):
         """
@@ -140,8 +74,8 @@ class BGTTool:
         # Create a bounding box in RD coordinates
         bbox_rd = f"{x_rd - delta},{y_rd - delta},{x_rd + delta},{y_rd + delta}"
         # Convert RD bbox to WGS84 bbox
-        ll_longitude, ll_latitude = self.rd_to_wgs84(x_rd - delta, y_rd - delta)
-        ur_longitude, ur_latitude = self.rd_to_wgs84(x_rd + delta, y_rd + delta)
+        ll_longitude, ll_latitude = geo_utils.rd_to_wgs84(x_rd - delta, y_rd - delta)
+        ur_longitude, ur_latitude = geo_utils.rd_to_wgs84(x_rd + delta, y_rd + delta)
         bbox_wgs84 = f"{ll_longitude},{ll_latitude},{ur_longitude},{ur_latitude}"
 
         params = {
@@ -167,7 +101,7 @@ class BGTTool:
             GeoDataFrame or None: A GeoDataFrame containing the features that contain the point, or None if no features are found.
         """
         # Use the stored longitude and latitude
-        x_rd, y_rd = self.wgs84_to_rd(self.longitude, self.latitude)
+        x_rd, y_rd = geo_utils.wgs84_to_rd(self.longitude, self.latitude)
         collection_ids = self.get_collections()
         all_features = []
 
