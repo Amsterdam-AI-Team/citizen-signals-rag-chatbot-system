@@ -2,22 +2,24 @@
 Implementation of a meldingen retrieval tool.
 The tool is used by the central agent to retrieve duplicate or similar meldingen.
 """
+
 import logging
 import os
 import pickle
+import sys
 from ast import literal_eval
 from pathlib import Path
 from pprint import pprint
 
 import geopandas as gpd
 import pandas as pd
-import requests
-from pyproj import Transformer
 from sentence_transformers import SentenceTransformer
 from sentence_transformers.util import semantic_search
 from shapely.geometry import Point
-from codecarbon import EmissionsTracker
+
+sys.path.append("..")
 import config as cfg
+from helpers import geo_utils
 
 
 class MeldingenRetrieverTool:
@@ -66,7 +68,6 @@ class MeldingenRetrieverTool:
 
     def _get_persist_path(self):
         """Get path to index. Embed number of meldingen to account for different sizes."""
-        # TODO: Incorporate hashing to reindex on document update
         return (
             self.index_storage_folder
             / f"meldingen_{len(self.meldingen_data)}_{self.model_name.replace('/', '_')}.pkl"
@@ -101,9 +102,8 @@ class MeldingenRetrieverTool:
 
     def filter_meldingen_embeddings(self, address):
         """Filter meldingen around a certain address"""
-        transformer_to_rd = Transformer.from_crs("EPSG:4326", "EPSG:28992", always_xy=True)
-        lat, lon = get_lat_lon_from_address(address)
-        poi = Point(transformer_to_rd.transform(lat, lon))
+        lon, lat = geo_utils.get_lon_lat_from_address(address)
+        poi = Point(geo_utils.wgs84_to_rd(lon, lat))
         self.meldingen_geodata["distance"] = self.meldingen_geodata.to_crs("EPSG:28992").distance(
             poi
         )
@@ -138,7 +138,6 @@ class MeldingenRetrieverTool:
         query_embedding = self.embedding_model.encode(query)
         hits = semantic_search(query_embedding, corpus_embeddings, top_k=top_k)
 
-        # TODO: cutoff based on similarity?
         hit_ids = [hit["corpus_id"] for hit in hits[0]]
         logging.info(f"Hits: {hits}")
 
@@ -167,55 +166,14 @@ def literal_return(val):
         return val
 
 
-# TODO: Transfer to common utils
-def get_lat_lon_from_address(address):
-    """
-    Retrieves the longitude and latitude for a given address using the Nominatim API.
-
-    Args:
-        address (str): The address to geocode.
-
-    Returns:
-        tuple: A tuple containing the longitude and latitude, or (None, None) if not found.
-    """
-    # Define the endpoint and parameters for the Nominatim API
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {"q": address, "format": "json", "limit": 1}
-
-    # Include the User-Agent header
-    headers = {"User-Agent": "BGTFetcher/1.0 (test@test.com)"}
-
-    # Make a GET request to the API with headers
-    response = requests.get(url, params=params, headers=headers)
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        data = response.json()
-        if data:
-            lat = float(data[0]["lat"])
-            lon = float(data[0]["lon"])
-            return lon, lat
-        else:
-            print("No results found for the address.")
-            return None, None
-    else:
-        print(f"Error fetching coordinates for address: {response.status_code}")
-        return None, None
-
-
 if __name__ == "__main__":
     logging.basicConfig(level="INFO")
 
-    # TODO: import all from cfg
-    HUGGING_CACHE = "/home/azureuser/cloudfiles/code//hugging_cache"
-    os.environ["TRANSFORMERS_CACHE"] = HUGGING_CACHE
-    os.environ["HF_HOME"] = HUGGING_CACHE
+    os.environ["TRANSFORMERS_CACHE"] = cfg.HUGGING_CACHE
+    os.environ["HF_HOME"] = cfg.HUGGING_CACHE
 
-    meldingen_in_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/raw_data"
-    meldingen_out_folder = "/home/azureuser/cloudfiles/code/blobfuse/meldingen/processed_data/"
-    source = "20240821_meldingen_results_prod"
-    meldingen_path = f"{meldingen_in_folder}/{source}.csv"
-    index_folder = f"{meldingen_out_folder}/indices"
+    meldingen_path = f"{cfg.meldingen_in_folder}/{cfg.source}.csv"
+    index_folder = f"{cfg.meldingen_out_folder}/indices"
 
     model_name = "intfloat/multilingual-e5-large"
     # model_name = "zeta-alpha-ai/Zeta-Alpha-E5-Mistral"

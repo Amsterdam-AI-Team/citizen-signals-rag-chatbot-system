@@ -214,14 +214,14 @@ body {
     justify-content: center;
     content: '\f00c';
     font-family: 'Font Awesome 6 Free';
-    font-weight: 900; 
+    font-weight: 900;
     color: #ffffff;
     font-size: 8px;
 }
 
 #dropdown-menu .model-icon {
-    width: 30px; 
-    height: 30px; 
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;

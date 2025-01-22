@@ -1,18 +1,19 @@
+"""Populate the Chroma DB used in the policy retrieval tool in advance."""
 import argparse
 import os
 import re
 import shutil
-
 from typing import List
 
-from tqdm import tqdm
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
+from codecarbon import EmissionsTracker
 from langchain_community.vectorstores import Chroma
-from codecarbon import EmissionsTracker, track_emissions
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from tqdm import tqdm
 
 import config as cfg
 from helpers.embedding_helpers import OpenAIEmbeddingFunction
+
 
 class TXTDirectoryLoader:
     """Loader class to load and preprocess TXT files from a directory."""
@@ -20,7 +21,7 @@ class TXTDirectoryLoader:
     def __init__(self, path: str):
         """
         Initialize the TXTDirectoryLoader with the directory path.
-        
+
         Args:
             path (str): Path to the directory containing TXT files.
         """
@@ -29,7 +30,7 @@ class TXTDirectoryLoader:
     def load(self) -> List[Document]:
         """
         Load and preprocess TXT files from the directory, and convert them to Document objects.
-        
+
         Returns:
             List[Document]: List of Document objects containing the preprocessed text and metadata.
         """
@@ -48,22 +49,23 @@ class TXTDirectoryLoader:
     def _preprocess_text(self, text: str) -> str:
         """
         Preprocess text by removing unnecessary newlines and preserving specific patterns.
-        
+
         Args:
             text (str): Raw text to preprocess.
-        
+
         Returns:
             str: Preprocessed text.
         """
-        text = re.sub(r'\n+', ' ', text)  # Replace unnecessary newlines
-        text = re.sub(r'\[LINK: [^\]]+\]\([^\)]+\)', lambda m: m.group(0).replace('\n', ''), text)
-        text = re.sub(r'\[IMG: [^\]]+\]', lambda m: m.group(0).replace('\n', ''), text)
+        text = re.sub(r"\n+", " ", text)  # Replace unnecessary newlines
+        text = re.sub(r"\[LINK: [^\]]+\]\([^\)]+\)", lambda m: m.group(0).replace("\n", ""), text)
+        text = re.sub(r"\[IMG: [^\]]+\]", lambda m: m.group(0).replace("\n", ""), text)
         return text
+
 
 def load_documents() -> List[Document]:
     """
     Load documents from different formats (PDF, TXT, HTML) in the data directory.
-    
+
     Returns:
         List[Document]: List of loaded Document objects.
     """
@@ -75,13 +77,14 @@ def load_documents() -> List[Document]:
 
     return documents
 
+
 def split_documents(documents: List[Document]) -> List[Document]:
     """
     Split documents into smaller chunks for processing.
-    
+
     Args:
         documents (List[Document]): List of Document objects to split.
-    
+
     Returns:
         List[Document]: List of split Document objects.
     """
@@ -102,10 +105,11 @@ def split_documents(documents: List[Document]) -> List[Document]:
 
     return chunks
 
+
 def add_to_chroma(chunks: List[Document]):
     """
     Add or update document chunks in the Chroma database.
-    
+
     Args:
         chunks (List[Document]): List of Document objects (chunks) to add.
     """
@@ -120,18 +124,23 @@ def add_to_chroma(chunks: List[Document]):
 
     if new_chunks:
         print(f"Adding new documents: {len(new_chunks)}")
-        for chunk, chunk_id in tqdm(zip(new_chunks, [chunk.metadata["id"] for chunk in new_chunks]), total=len(new_chunks), desc="Adding documents"):
+        for chunk, chunk_id in tqdm(
+            zip(new_chunks, [chunk.metadata["id"] for chunk in new_chunks]),
+            total=len(new_chunks),
+            desc="Adding documents",
+        ):
             db.add_documents([chunk], ids=[chunk_id])
     else:
         print("No new documents to add")
 
+
 def calculate_chunk_ids(chunks: List[Document]) -> List[Document]:
     """
     Calculate unique IDs for each chunk based on its source, page, and chunk index.
-    
+
     Args:
         chunks (List[Document]): List of Document objects (chunks) to process.
-    
+
     Returns:
         List[Document]: List of Document objects with assigned IDs.
     """
@@ -153,6 +162,7 @@ def calculate_chunk_ids(chunks: List[Document]) -> List[Document]:
 
     return chunks
 
+
 def clear_database():
     """Clear the existing Chroma database by removing the directory."""
     if os.path.exists(cfg.CHROMA_PATH):
@@ -165,7 +175,7 @@ if __name__ == "__main__":
 
     # Load and process documents
     if cfg.track_emissions:
-        tracker = EmissionsTracker(experiment_id = "oneoff_policy_documents_embedding")
+        tracker = EmissionsTracker(experiment_id="oneoff_policy_documents_embedding")
         tracker.start()
 
     parser = argparse.ArgumentParser(description="Manage the document database.")
