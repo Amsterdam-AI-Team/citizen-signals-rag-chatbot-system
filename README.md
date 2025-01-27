@@ -26,8 +26,8 @@ We hope, however, that its architecture, code and underlying prompts can serve a
 
 Amsterdam's [Meldingen](https://meldingen.amsterdam.nl/) system is an online system
 which allows citizens to report issues in public spaces.
-Citizens can report issues suck as rubbish or a maintenance issue on the street
-or in a park, a dangerous traffic situation or disturbance from people or cafe’s.
+Citizens can report issues such as rubbish or a maintenance issue on the street
+or in a park, a dangerous traffic situation or disturbance from people or cafes.
 According to data from 2023, the City receives ± 400.000 citizen reports per year.
 
 With 25-30% of reports requiring no (new) action from the municipality,
@@ -38,7 +38,8 @@ it will make the process of handling reports more transparent,
 it will create user-friendly interaction, and - in the long term -
 ensure better service for reports that do require human handling.
 
-More information about the envisioned solution and its impact on users can be found in the full [report](OPENRESEARCH_LINK_TO_BE_ADDED).
+More information about the envisioned solution and its impact on users can be found in the full report
+([English](https://openresearch.amsterdam/en/page/117892)|[Dutch](https://openresearch.amsterdam/nl/page/117892)).
 
 ## How it works
 
@@ -53,22 +54,22 @@ the feasibility of different scenarios and the adaptability and scalability of t
 </p>
 
 
-In the core of the system is the [central agent](./src/central_agentic_agent.py)
-It serves as an orchestrator, which receives instructions regarding the task and the report,
-collects all relevant details about a report, such as the type of problem and the location,
-then independently determines which tool is suitable for gathering
-information,
+In the core of the system is the [central agent](./src/central_agentic_agent.py).
+It serves as an orchestrator, which receives instructions regarding the task and the report and
+collects all relevant details about a report, such as the type of problem and the location.
+It then independently determines which tool is suitable for gathering
+information.
 
-In it's [configuration](./src/config.py) , the agent receives instructions about its task,
+In its [configuration](./src/config.py), the agent receives instructions about its task,
 different guidelines related to the resolution of reports, as well as communication rules.
 Furthermore, the central agent is provided with an explanation of the [available tools](./src/tools)
-and their functionalities to use them effectively for reports.
+and their functionalities to use them effectively for handling reports.
 Finally, the central agent is instructed to follow a structured reasoning process,
 documenting intermediate steps such as the report, selected tools, gathered information,
 and preliminary conclusions, ensuring a comprehensive overview of actionable information.
 
 The reasoning processes and effectively combining all gathered data is essentially
-performed by an LLM. In most experiments we use own deployment of GPT4o, however,
+performed by an LLM. In most experiments we use own deployment of GPT-4o, however,
 it is possible to optimize the system for the use of
 [any open-source model](https://github.com/Amsterdam-AI-Team/citizen-signals-rag-chatbot-system/tree/feat/SAI-2270-open-source-llm).
 This does require adjusting the templates (especially the scratchpad) and configuration
@@ -76,7 +77,8 @@ This does require adjusting the templates (especially the scratchpad) and config
 to correspond to the desired model.
 
 
-More information about the agent, as well as the individual tools can be found in the full [report](OPENRESEARCH_LINK_TO_BE_ADDED).
+More information about the agent, as well as the individual tools can be found in the full report
+([English](https://openresearch.amsterdam/en/page/117892)|[Dutch](https://openresearch.amsterdam/nl/page/117892)).
 
 ## Installation
 
@@ -119,10 +121,8 @@ decide on a model in the `model_dict`.
 
 You can also adjust all agent templates according to own preferences.
 
-### Secrets
-
-Furthermore, you will need to add a `[my_secrets.py](./src/my_secrets.py) with an `API_KEYS` object containing
-- `openai_azure` key: an OpenAI API key correspodning to the endpoint in the [config.py](./src/config.py)
+Furthermore, you will need to add a [my_secrets.py](./src/my_secrets.py) with an `API_KEYS` object containing
+- `openai_azure` key: an OpenAI API key corresponding to the endpoint in the [config.py](./src/config.py)
 - `co2-signal` key (if `track_emissions=True`)
 
 ### Option 1: Run via chat interface
