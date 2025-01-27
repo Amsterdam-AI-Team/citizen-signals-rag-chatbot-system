@@ -1,21 +1,14 @@
 """Main app for chatbot-like interaction"""
-import json
 import os
-import threading
 
-import pyaudio
 from flask import (
     Flask,
-    Response,
     jsonify,
     render_template,
-    request,
-    stream_with_context,
+    request
 )
-from openai import OpenAI
 
 import config as cfg
-import my_secrets
 from helpers.melding_helpers import load_session, save_session
 from process_melding import MeldingProcessor
 
@@ -26,7 +19,6 @@ Flask application for handling chat queries, session management, and audio strea
 This module sets up the routes and logic for:
 - Serving the main interface (`index.html`)
 - Handling chat queries and maintaining session state
-- Starting and stopping audio streaming using OpenAI's text-to-speech (TTS) service
 """
 global chat_history, session_active, melding_attributes
 
@@ -137,77 +129,6 @@ def clear_session():
             )
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-
-
-# Global stop flag to control the streaming
-stop_flag = threading.Event()
-
-
-@app.route("/read_aloud", methods=["POST"])
-def read_aloud():
-    """
-    Stream audio for text-to-speech conversion.
-
-    This route takes a POST request with text to read aloud, then streams the audio
-    using OpenAI's TTS model. Audio is streamed in real-time to the frontend.
-
-    Returns:
-        Response: Streamed audio response or error message.
-    """
-    global stop_flag
-
-    data = request.json
-    text_to_read = data.get("text", "")
-
-    if not text_to_read:
-        return jsonify({"error": "No text provided"}), 400
-
-    # Reset the stop flag at the start of a new stream
-    stop_flag.clear()
-
-    try:
-        # Initialize the OpenAI client
-        client = OpenAI(api_key=my_secrets.API_KEYS["openai"])
-
-        def generate_audio_stream():
-            """
-            Generator function to stream audio data.
-
-            Uses PyAudio to output audio to speakers in real-time, and streams audio to the frontend.
-            """
-            # Initialize PyAudio
-            p = pyaudio.PyAudio()
-            stream = p.open(format=pyaudio.paInt16, channels=1, rate=24000, output=True)
-
-            yield json.dumps(
-                {"status": "stream_started"}
-            ) + "\n"  # Send initial message to frontend
-
-            # Stream the audio data to the speakers in real-time
-            with client.audio.speech.with_streaming_response.create(
-                model="tts-1",
-                voice="alloy",  # Specify the voice model
-                input=text_to_read,
-                response_format="pcm",  # Streaming in PCM format
-            ) as response:
-                for chunk in response.iter_bytes(1024):
-                    if stop_flag.is_set():
-                        break  # Stop streaming if the flag is set
-                    stream.write(chunk)
-                    yield chunk  # Stream the audio to the frontend
-
-            # Close the audio stream
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
-
-        return Response(
-            stream_with_context(generate_audio_stream()),
-            mimetype="application/octet-stream",
-        )
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/stop_audio", methods=["POST"])

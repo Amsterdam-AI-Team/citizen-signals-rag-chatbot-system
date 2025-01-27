@@ -158,10 +158,6 @@ For internal use of the original meldingen data, mount the corresponding storage
 sh blobfuse_meldingen.sh
 ```
 
-#### TTS Note
-
-The current implementation for reading messages out loud is not compatible with Azure OpenAI API because the tts model is not (yet) supported.
-
 
 ## Contributing
 
