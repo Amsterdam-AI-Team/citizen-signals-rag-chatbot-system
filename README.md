@@ -1,22 +1,86 @@
-# RAG Chatbot System for Citizen Signals
+# Agentic RAG support for citizens reporting issues in Amsterdam
 
-The Retrieval Augmented Generation (RAG) Chatbot System is designed for the Municipality of Amsterdam to efficiently handle citizen signals (meldingen). When a melding is received, the system retrieves relevant information using RAG, with the aim of resolving the issue before it is forwarded to the Municipality’s official Signals system. This approach improves the overall user experience by reducing the number of meldingen that need to be escalated, ensuring faster and more efficient responses.
+This repository contains an Agentic RAG (Retrieval Augmented Generation) System
+developed for the City of Amsterdam and used to explore the use of this technology
+for improving the handling of citizen reports.
+The solution automates responses to provide fast, empathetic, and context-specific feedback,
+reducing delays and dissatisfaction. By automating these cases, the workload for municipal staff is reduced,
+allowing more focus on complex issues.
+
+<p align="center" width="90%">
+    <img width="90%" src=./media/demo-image-4.png alt="{{ include.description }}">
+    <br><i> Example interaction with the system.
+        When a melding is received, the system retrieves relevant information
+        from various sources, with the aim of providing useful information
+        about the issue, whether, when and how it would be resolved
+        and what the citizen can expect. </i>
+</p>
 
 
-https://github.com/user-attachments/assets/71d751a4-6eda-4b89-85cf-71f9f11b52b4
+_**Disclaimer:**_ Due to the sensitive nature of some of the underlying data sources (e.g. the historical citizen reports),
+running the system requires incorporating own data and making the necessary adjustments.
+We hope, however, that its architecture, code and underlying prompts can serve as inspiration for similar use cases.
 
 
-## Background
+### Meldingen Background
 
-The RAG Chatbot System for Citizen Signals was developed to streamline the process of managing citizen reports (meldingen) for the Municipality of Amsterdam. By using Retrieval Augmented Generation (RAG), the system can pull in relevant information related to a melding and attempt to resolve it before escalating it to the Municipality's official Signals system. This proactive approach helps reduce the workload on the municipal team and enhances the user experience by providing quicker resolutions.
+Amsterdam's [Meldingen](https://meldingen.amsterdam.nl/) system is an online system
+which allows citizens to report issues in public spaces.
+Citizens can report issues such as rubbish or a maintenance issue on the street
+or in a park, a dangerous traffic situation or disturbance from people or cafes.
+According to data from 2023, the City receives ± 400.000 citizen reports per year.
 
-The system is designed to efficiently manage citizen-reported issues, improve response times, and minimize unnecessary entries into the Signals system. By integrating RAG, the chatbot retrieves contextual information and assists citizens directly, minimizing the need for manual handling. This innovative approach enhances overall efficiency and helps the municipality better serve its citizens.
+With 25-30% of reports requiring no (new) action from the municipality,
+it is expected that automatically collecting information from internal systems
+and providing the citizen with details about the issue would have a significant impact on users.
+The solution would provide citizens with fast and accurate responses,
+it will make the process of handling reports more transparent,
+it will create user-friendly interaction, and - in the long term -
+ensure better service for reports that do require human handling.
 
-## Folder Structure
+More information about the envisioned solution and its impact on users can be found in the full report
+([English](https://openresearch.amsterdam/en/page/117892)|[Dutch](https://openresearch.amsterdam/nl/page/117892)).
 
-* [`src`](./src): All source code files specific to this project.
+## How it works
 
-## Installation 
+Our solution covers the most relevant components of an agentic RAG architecture.
+It focuses primarily on the implementation of diverse tools which can help us assess
+the feasibility of different scenarios and the adaptability and scalability of the system.
+
+
+<p align="center" width="90%">
+    <img width="90%" src=./media/Agentic-RAG-Meldingen-EN.png alt="{{ include.description }}">
+    <br><i> Overview of our Agentic RAG architecture </i>
+</p>
+
+
+In the core of the system is the [central agent](./src/central_agentic_agent.py).
+It serves as an orchestrator, which receives instructions regarding the task and the report and
+collects all relevant details about a report, such as the type of problem and the location.
+It then independently determines which tool is suitable for gathering
+information.
+
+In its [configuration](./src/config.py), the agent receives instructions about its task,
+different guidelines related to the resolution of reports, as well as communication rules.
+Furthermore, the central agent is provided with an explanation of the [available tools](./src/tools)
+and their functionalities to use them effectively for handling reports.
+Finally, the central agent is instructed to follow a structured reasoning process,
+documenting intermediate steps such as the report, selected tools, gathered information,
+and preliminary conclusions, ensuring a comprehensive overview of actionable information.
+
+The reasoning processes and effectively combining all gathered data is essentially
+performed by an LLM. In most experiments we use own deployment of GPT-4o, however,
+it is possible to optimize the system for the use of
+[any open-source model](https://github.com/Amsterdam-AI-Team/citizen-signals-rag-chatbot-system/tree/feat/SAI-2270-open-source-llm).
+This does require adjusting the templates (especially the scratchpad) and configuration
+(including some of the parameters in the langchain agent initialization)
+to correspond to the desired model.
+
+
+More information about the agent, as well as the individual tools can be found in the full report
+([English](https://openresearch.amsterdam/en/page/117892)|[Dutch](https://openresearch.amsterdam/nl/page/117892)).
+
+## Installation
 
 1) Clone this repository:
 
@@ -28,7 +92,7 @@ git clone https://github.com/Amsterdam-AI-Team/citizen-signals-rag-chatbot-syste
 
 ```bash
 sudo apt-get install portaudio19-dev
-```
+``````
 
 3) Install all dependencies:
 
@@ -36,41 +100,63 @@ sudo apt-get install portaudio19-dev
 pip install -r requirements.txt
 ```
 
-The code has been tested with Python 3.10.0 on Linux/MacOS/Windows.
+The code has been tested with Python 3.10.0 on Linux.
+
+
 
 ## Usage
 
-### Step 1: Navigate to scripts
+_**Disclaimer:**_  This repository is intended primarily for transparency and inspiration.
+Due to the sensitive nature of some of the underlying data sources
+(e.g. the historical citizen reports), running the system requires incorporating
+own data and making the necessary adjustments.
+*This could hinder the usage of the system outside of the secure municipal environment.*
 
-First, navigate to the source directory:
+### Configuration
+Before use, please adjust all paths in the [config.py](./src/config.py) file.
+
+You can also decide whether to `track_emissions`,
+select a different `embedding_model_name` (used for the retrieval of historical reports),
+decide on a model in the `model_dict`.
+
+You can also adjust all agent templates according to own preferences.
+
+Furthermore, you will need to add a [my_secrets.py](./src/my_secrets.py) with an `API_KEYS` object containing
+- `openai_azure` key: an OpenAI API key corresponding to the endpoint in the [config.py](./src/config.py)
+- `co2-signal` key (if `track_emissions=True`)
+
+### Option 1: Run via chat interface
+
+You can use the chat interface by running the app located in the source directory using the following command:
 
 ```bash
-cd src
+python src/app.py
 ```
-
-### Step 2: Run the Chatbot
-
-You can run the chatbot locally by executing the following command:
-
-```bash
-python3 app.py
-```
-
 This will start the chatbot on your localhost, allowing you to interact with it via a web interface.
+By default you can access the app locally on port 5000 ([127.0.0.1:5000](127.0.0.1:5000)).
+
+### Option 2: Call the central agent
+
+Alternatively, you can directly call the central agent by providing
+the report, address and any additional information.
+To do that, adjust the examples on the bottom of the [central_agentic_agent.py](./src/central_agentic_agent.py) script use the following command:
+
+```bash
+python src/central_agentic_agent.py
+```
 
 ### Running via Azure ML
 
-If you wish to run this code via Azure ML services, you should open repository and run app.py in VS Desktop mode. This will ensure the localhost application works properly.
+If you wish to run this code via Azure ML services, you can open the repository and run app.py in VS Desktop mode.
+This will ensure the localhost application works properly.
 
-### Notes
+#### Internal storage
 
-- You will need an OpenAI API key for answer generation and image processing. This API keys should also be specified in the configuration file. It is possible to use different LLMs of your choice, but doing so will require modifying the code accordingly. 
+For internal use of the original meldingen data, mount the corresponding storage container using:
 
-- Only the melding type 'Afval' and subtypes 'restafval' (e.g., garbage bags) and 'grof afval' (e.g., sofas and chairs) is now supported. You can add more protocols in the processors.py file.
-
-- Retrieval using RAG for type 'Afval' is now dynamic and pulls garbage collecting times given an address. The prompt which is created to format the answer which includes these times could be further tweaked for better alignment with the melding conversation.
-
-- Current implementation for reading messages out loud is not compatible with Azure OpenAI API because the tts model is not (yet) supported.
+```bash
+sh blobfuse_meldingen.sh
+```
 
 
 ## Contributing
@@ -81,8 +167,6 @@ We welcome contributions! Feel free to [open an issue](https://github.com/Amster
 
 This repository was created by [Amsterdam Intelligence](https://amsterdamintelligence.com/) for the City of Amsterdam.
 
-Optional: add citation or references here.
-
-## License 
+## License
 
 This project is licensed under the terms of the European Union Public License 1.2 (EUPL-1.2).

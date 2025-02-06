@@ -64,7 +64,7 @@ window.addEventListener('beforeunload', clearSessionOnUnload);
 function displayMessage(text, sender, isLoading = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}`;
-    
+
     if (sender === 'bot') {
         const modelIconDiv = document.createElement('div');
         modelIconDiv.className = 'model-icon';
@@ -97,7 +97,7 @@ function displayMessage(text, sender, isLoading = false) {
     // Ensure the scroll happens after the message has been added, with smooth scrolling
     setTimeout(() => {
         messagesDiv.scrollTo({
-            top: messagesDiv.scrollHeight, 
+            top: messagesDiv.scrollHeight,
             behavior: 'smooth' // Enables smooth scrolling
         });
     }, 100); // Adding a short delay to ensure DOM update completes
@@ -223,9 +223,9 @@ async function handleSendButtonClick() {
         const response = await fetch('/query', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                message: userMessage, 
-                model: currentModel, 
+            body: JSON.stringify({
+                message: userMessage,
+                model: currentModel,
                 session: sessionActive,
                 image: base64Image // Retain base64Image for sending to the server
             }),
@@ -317,7 +317,7 @@ function handleDropdownSelection(event) {
         const model = button.getAttribute('data-model'); // Update the current model
         currentModel = model;
         modelSwitcher.innerHTML = `${currentModel} <i class="fas fa-chevron-down"></i>`; // Update the button text
-        dropdownButtons.forEach(btn => btn.classList.remove('selected')); 
+        dropdownButtons.forEach(btn => btn.classList.remove('selected'));
         button.classList.add('selected'); // Select the clicked button
         dropdownMenu.style.display = 'none'; // Hide the dropdown menu
     }
@@ -327,104 +327,6 @@ function handleDropdownSelection(event) {
 function closeDropdownMenuOnClick(e) {
     if (!modelSwitcher.contains(e.target)) {
         dropdownMenu.style.display = 'none'; // Hide the dropdown menu
-    }
-}
-
-// Function to handle document clicks for managing bot actions and audio streaming
-function handleDocumentClick(event) {
-    const target = event.target;
-
-    // Check if the click is on a read aloud or stop button
-    if (target.closest('.bot-buttons button i.fa-volume-high') || target.closest('.bot-buttons button i.fa-stop')) {
-        const readButton = target.closest('.bot-buttons button');
-        const icon = readButton.querySelector('i');
-        const messageText = readButton.closest('.message.bot').querySelector('.message-text').innerText;
-
-        if (icon.classList.contains('fa-volume-high')) {
-            handleAudioStream(icon, messageText);
-        } else if (icon.classList.contains('fa-stop')) {
-            stopAudioStream(icon);
-        }
-    }
-}
-
-// Function to handle audio streaming when read aloud button is clicked
-function handleAudioStream(icon, messageText) {
-    // Stop any current streaming
-    if (isStreaming) {
-        if (currentReader) {
-            currentReader.cancel(); // Cancel the current stream
-        }
-        isStreaming = false;
-        currentReader = null;
-        document.querySelectorAll('.bot-buttons i.fa-stop').forEach(stopIcon => {
-            stopIcon.className = 'fa fa-volume-high'; // Reset icon to volume high
-        });
-    }
-
-    icon.className = 'loading-icon'; // Show loading icon
-
-    // Send request to read aloud the message
-    fetch('/read_aloud', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: messageText })
-    })
-    .then(response => {
-        const reader = response.body.getReader();
-        currentReader = reader;
-        isStreaming = true;
-        let streamStarted = false;
-
-        // Read the stream and handle audio playback
-        function readStream() {
-            return reader.read().then(({ done, value }) => {
-                if (done) {
-                    icon.className = 'fa fa-volume-high'; // Reset icon when done
-                    isStreaming = false;
-                    currentReader = null;
-                    return;
-                }
-
-                const textChunk = new TextDecoder().decode(value);
-                if (!streamStarted) {
-                    try {
-                        const parsedData = JSON.parse(textChunk.trim());
-                        if (parsedData.status === "stream_started") {
-                            icon.className = 'fa fa-stop'; // Change to stop icon
-                            streamStarted = true;
-                        }
-                    } catch (e) {
-                        // Handle JSON parse errors
-                    }
-                }
-
-                readStream(); // Continue reading stream
-            });
-        }
-
-        readStream(); // Start reading stream
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        icon.className = 'fa fa-volume-high'; // Reset icon on error
-        isStreaming = false;
-        currentReader = null;
-    });
-}
-
-// Function to stop audio streaming
-function stopAudioStream(icon) {
-    if (isStreaming && currentReader) {
-        currentReader.cancel(); // Cancel the current stream
-        fetch('/stop_audio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        }).then(() => {
-            icon.className = 'fa fa-volume-high'; // Reset icon
-            isStreaming = false;
-            currentReader = null;
-        });
     }
 }
 

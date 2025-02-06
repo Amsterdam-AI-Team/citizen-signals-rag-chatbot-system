@@ -19,6 +19,10 @@ extend-ignore =
     D400,
     # D401 First line should be in imperative mood
     D401
+    # E501 line too long (due to prompts & msgs)
+    E501
+    # E402 module level import not at top of file broken by sys.append
+    E402
 
 # Example of excluding errors per file
 #per-file-ignores = __init__.py:F401

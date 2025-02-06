@@ -1,7 +1,10 @@
 flask
 openai
+contextily
+geopandas
 google-generativeai
 groq
+matplotlib
 sounddevice
 PyAudio
 pyproj
@@ -12,3 +15,7 @@ langchain-community==0.2.1
 langchain-core==0.2.30
 langchain-text-splitters==0.2.0
 chromadb==0.4.24
+sentence_transformers
+faiss-cpu
+codecarbon
+pdfplumber
